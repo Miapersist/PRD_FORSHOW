@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>角色维护 - GPM系统</title>
+<link rel="stylesheet" href="_common/gpm.css">
+<style>
+  .import-tpl-note { font-size:12px; color:#909399; margin-top:6px; line-height:1.6; }
+  .import-tpl-note b { color:#1869e1; }
+  .batch-bar { display:flex; align-items:center; gap:10px; padding:8px 16px; background:#ecf5ff; border:1px solid #d9ecff; border-radius:4px; margin:0 16px 8px; font-size:13px; }
+</style>
+</head>
+<body>
+
+<template id="page-body">
+<div class="page" style="padding:0;display:flex;flex-direction:column;overflow:hidden;">
+
+  <div class="panel" style="flex:1;display:flex;flex-direction:column;min-height:0;border:none;border-radius:0;">
+    <!-- 查询区 -->
+    <div class="search-area" id="searchArea">
+      <div class="search-form">
+        <div class="search-item"><label>角色编码：</label><input type="text" id="qCode" placeholder="请输入角色编码"></div>
+        <div class="search-item"><label>角色名称：</label><input type="text" id="qName" placeholder="请输入角色名称"></div>
+        <div class="search-item"><label>生效日期：</label><input type="text" id="qDate" placeholder="选择日期" onfocus="this.type='date'"></div>
+        <div class="search-item"><label>管理部门：</label>
+          <input type="text" id="qDept" placeholder="请输入管理部门（支持模糊）">
+        </div>
+        <div class="search-actions">
+          <button class="btn btn-primary" onclick="doSearch()">查询</button>
+          <button class="btn btn-default" onclick="resetSearch()">重置</button>
+          <span class="collapse-link" onclick="toggleSearch()">收起 <span id="collapseIco">∧</span></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 工具条 -->
+    <div class="table-toolbar">
+      <button class="btn btn-primary" onclick="openEdit(null)">新增</button>
+      <button class="btn btn-default" onclick="openImport()"><span style="margin-right:2px">⤒</span>导入 <span class="new-col-badge" style="background:#67c23a">V5.2</span></button>
+      <button class="btn btn-default" onclick="doExport()"><span style="margin-right:2px">⤓</span>导出 <span class="new-col-badge" style="background:#67c23a">V5.2</span></button>
+      <button class="btn btn-default" onclick="doExportPerm()">按角色导出菜单权限</button>
+      <div class="right"><span class="toolbar-note">共 <b id="totalCount">0</b> 条</span></div>
+    </div>
+
+    <!-- 新增2列说明 -->
+    <div class="alert alert-info" style="margin-top:0;">
+      <span class="ico">ⓘ</span>
+      <div><b>本次新增</b>：列表新增「管理部门、角色说明」2 列；工具条新增「导入 / 导出」。<b>管理部门为备注性质</b>，供人工查阅，<b>不参与审批与流程</b>；角色说明便于"角色可解释、可归属、可维护"。</div>
+    </div>
+
+    <!-- 表格 -->
+    <div class="table-wrap" style="flex:1;overflow:auto;min-height:0;">
+      <table class="list-table">
+        <thead><tr>
+          <th style="width:46px;">序号</th>
+          <th style="min-width:150px;">角色编码</th>
+          <th style="min-width:130px;">角色名称</th>
+          <th style="width:110px;">角色类型</th>
+          <th class="new-col" style="min-width:110px;">管理部门<span class="new-col-badge">新</span></th>
+          <th class="new-col" style="min-width:230px;">角色说明<span class="new-col-badge">新</span></th>
+          <th style="width:100px;">生效日期</th>
+          <th style="width:100px;">失效日期</th>
+          <th style="width:80px;">操作</th>
+        </tr></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+
+    <!-- 分页 -->
+    <div class="pagination-bar">
+      <select id="pageSizeSel" onchange="renderPage()"><option>15条/页</option><option>30条/页</option><option>50条/页</option></select>
+      <span id="totalText">共 0 条</span>
+      <div class="flex" style="gap:4px;">
+        <span class="page-btn disabled" id="prevBtn" onclick="gotoPage(curPage-1)">&lt;</span>
+        <span id="pageNums" class="flex" style="gap:4px;"></span>
+        <span class="page-btn" id="nextBtn" onclick="gotoPage(curPage+1)">&gt;</span>
+      </div>
+      <span>前往</span><input type="text" id="gotoInput" style="width:44px;text-align:center;" value="1"><span>页</span>
+      <button class="btn btn-default btn-sm" onclick="gotoPage(parseInt(document.getElementById('gotoInput').value)||1)">确定</button>
+    </div>
+  </div>
+</div>
+</template>
+
+<!-- ============ 新增/编辑 弹窗 ============ -->
+<div class="modal-mask" id="editMask">
+  <div class="modal-wrap" style="width:820px;">
+    <div class="modal-head"><h3 id="editTitle">新增角色</h3><span class="modal-close" onclick="closeEdit()">×</span></div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-item"><label><span class="req">*</span>角色编码：</label>
+          <div class="field-col"><input type="text" id="fCode" placeholder="请输入角色编码"><div class="err">请输入角色编码</div></div>
+        </div>
+        <div class="form-item"><label><span class="req">*</span>生效日期：</label>
+          <div class="field-col"><input type="date" id="fStart"><div class="err">请选择生效日期</div></div>
+        </div>
+        <div class="form-item"><label>失效日期：</label>
+          <div class="field-col"><input type="date" id="fEnd"></div>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-item" style="flex:1;"><label><span class="req">*</span>角色名称：</label>
+          <div class="field-col" style="flex:1;">
+            <div class="flex-gap">
+              <select id="fLang" style="width:110px;"><option>简体中文</option><option>English</option></select>
+              <input type="text" id="fName" placeholder="请输入角色名称" style="flex:1;">
+              <button class="btn btn-primary btn-sm" onclick="addLang()">新增</button>
+            </div>
+            <div id="langList" class="mt8"></div>
+          </div>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-item" style="flex:1;"><label><span class="req">*</span>角色类型：</label>
+          <div class="field-col" style="flex:1;">
+            <select id="fType" style="width:100%;">
+              <option value="采购商角色" selected>采购商角色</option>
+              <option value="采购商初始化角色">采购商初始化角色</option>
+              <option value="供应商角色">供应商角色</option>
+              <option value="供应商初始化角色">供应商初始化角色</option>
+              <option value="注册初始化角色">注册初始化角色</option>
+            </select>
+            <div class="muted mt8">角色类型为<b>单值枚举</b>，共 5 项，与后台 <b>RoleType</b> 一一对应（BUYER / BUYER_INIT / SUPPLIER / SUPPLIER_INIT / REG_DEFAULT）</div>
+          </div>
+        </div>
+      </div>
+      <!-- 新增字段 -->
+      <div class="collapse-item">
+        <div class="collapse-head" style="background:#e3f0ff;">新增字段（成本工程部要求）<span class="new-col-badge">新</span></div>
+        <div class="collapse-body">
+          <div class="form-row">
+            <div class="form-item"><label>管理部门：</label>
+              <div class="field-col">
+                <input type="text" id="fDept" placeholder="请输入管理部门（备注性质，非必填）">
+                <div class="muted mt8">备注该角色归口管理的部门，供人工查阅，<b>不参与审批与流程</b></div>
+              </div>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-item" style="flex:1;"><label>角色说明：</label>
+              <div class="field-col" style="flex:1;">
+                <textarea id="fDesc" rows="3" placeholder="一句话直观描述该角色用途，如：成本工程部成本管理员专用，维护零件目标成本与年降（非必填）" style="width:100%;"></textarea>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- 菜单权限树 -->
+      <div class="collapse-item">
+        <div class="collapse-head" onclick="toggleTree(this)">菜单权限<span style="color:#909399;font-weight:normal;">（勾选该角色可访问的菜单/按钮）</span><span id="treeIco">▾</span></div>
+        <div class="collapse-body" id="treeBody">
+          <div class="tree-box" id="permTree"></div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-default" onclick="closeEdit()">取消</button>
+      <button class="btn btn-primary" onclick="saveRole()">确认</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 导入 弹窗 ============ -->
+<div class="modal-mask" id="importMask">
+  <div class="modal-wrap" style="width:560px;">
+    <div class="modal-head"><h3>导入角色 <span class="new-col-badge" style="background:#67c23a">V5.2</span></h3><span class="modal-close" onclick="closeImport()">×</span></div>
+    <div class="modal-body">
+      <div class="alert alert-info" style="margin:0 0 12px;">
+        <span class="ico">ⓘ</span>
+        <div>支持从 Excel 批量导入角色数据。<b>固定 7 列</b>，按<b>角色编码 upsert</b>（已存在＝更新，不存在＝新增）；同一文件内重复角色编码＝<b>报错并提示行号</b>，禁止覆盖。</div>
+      </div>
+      <div class="form-row">
+        <div class="form-item" style="flex:1;"><label>选择文件：</label>
+          <div class="field-col" style="flex:1;">
+            <div class="flex-gap">
+              <input type="text" id="importFileName" readonly placeholder="请选择 .xlsx 文件" style="flex:1;">
+              <button class="btn btn-default" onclick="document.getElementById('importFile').click()">浏览</button>
+              <input type="file" id="importFile" accept=".xlsx,.xls" style="display:none" onchange="onPickFile(this)">
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="import-tpl-note">
+        导入模板列（<b>固定 7 列</b>）：<b>角色编码*｜角色名称*｜角色类型*｜生效时间*｜管理部门｜角色说明｜失效时间</b><br>
+        · <b>必填规则</b>：<b>角色编码 / 角色名称 / 角色类型</b> 恒必填；<b>生效时间</b> 新增行必填、<b>更新行留空＝保持原值</b>；<br>
+        · <b>角色类型</b>＝单值枚举，共 5 项：采购商角色 / 采购商初始化角色 / 供应商角色 / 供应商初始化角色 / 注册初始化角色（不用分隔符）；<br>
+        · <b>管理部门 / 角色说明 / 失效时间</b> 可选，<b>失效时间留空＝长期有效</b>；<br>
+        · <b>同一文件内重复角色编码＝报错并提示行号，禁止覆盖</b>；多余列忽略；<b>菜单权限树不参与导入</b>；<br>
+        · <b>导出列＝本 7 列</b>，形成"导出 → 补填 → 回填"闭环。<br>
+        <a class="link" onclick="downloadTpl()">下载导入模板.xlsx</a>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-default" onclick="closeImport()">取消</button>
+      <button class="btn btn-primary" onclick="confirmImport()">开始导入</button>
+    </div>
+  </div>
+</div>
+
+<script src="_common/gpm-layout.js"></script>
+<script>
+GpmLayout.init({
+  activePage: 'roleMaintenance',
+  breadcrumb: ['首页', '用户权限', '角色维护'],
+  tabs: [
+    { key: 'home', label: '首页', closable: false },
+    { key: 'userAccess', label: '用户权限', page: '01_用户权限.html' },
+    { key: 'roleMaintenance', label: '角色维护' }
+  ],
+  activeTab: 'roleMaintenance'
+});
+
+/* ================= Mock 数据（对齐生产环境截图 + 128角色口径） ================= */
+var ROLE_TYPE_BUYER = '采购商角色';
+var roles = [
+  { code:'VendorManagement', name:'供应链专员', type:ROLE_TYPE_BUYER, dept:'采购', desc:'负责供应商寻源、报价与供应链协同', start:'2021-08-04', end:'' },
+  { code:'FinanceManagement', name:'财务专员', type:ROLE_TYPE_BUYER, dept:'财务', desc:'财务线成本核对、价格审批与结算', start:'2021-08-23', end:'' },
+  { code:'CostManagement', name:'成本管理员', type:ROLE_TYPE_BUYER, dept:'成本工程部', desc:'成本工程部成本管理员专用，维护目标成本与年降', start:'2021-08-26', end:'' },
+  { code:'ProjectLeader', name:'PL', type:ROLE_TYPE_BUYER, dept:'成本工程部', desc:'项目 Leader，统筹车型项目成本与权限', start:'2021-08-26', end:'' },
+  { code:'ProductPreparation', name:'生准担当', type:ROLE_TYPE_BUYER, dept:'生产管理部', desc:'生产准备阶段零件与成本跟进', start:'2021-08-26', end:'' },
+  { code:'PeiTao', name:'配套担当', type:ROLE_TYPE_BUYER, dept:'采购', desc:'零部件配套与供货跟进', start:'2021-08-26', end:'' },
+  { code:'Purchaser', name:'采购员', type:ROLE_TYPE_BUYER, dept:'采购', desc:'采购线零件认领、价格维护与审批发起', start:'2021-08-26', end:'' },
+  { code:'PurchaseTL', name:'采购系长', type:ROLE_TYPE_BUYER, dept:'采购', desc:'采购系长，负责本系采购审批', start:'2021-08-26', end:'' },
+  { code:'PurchaseSectionChief', name:'采购科长', type:ROLE_TYPE_BUYER, dept:'采购', desc:'采购科长，负责本科室采购审批', start:'2021-08-26', end:'' },
+  { code:'FinanceTL', name:'财务系长', type:ROLE_TYPE_BUYER, dept:'财务', desc:'财务系长，负责本系财务审批', start:'2021-08-26', end:'' },
+  { code:'FinanceSC', name:'财务科长', type:ROLE_TYPE_BUYER, dept:'财务', desc:'财务科长，负责本科室财务审批', start:'2021-08-26', end:'' },
+  { code:'PurchaseHeadOfDepartment', name:'采购部长', type:ROLE_TYPE_BUYER, dept:'采购', desc:'采购部长，采购线最高审批', start:'2021-08-26', end:'' },
+  { code:'MaterialVendor', name:'市况供应商', type:'供应商角色', dept:'采购', desc:'供应商端查看本企业市况与报价', start:'2021-09-13', end:'' },
+  { code:'ProductManagement', name:'生准管理者', type:ROLE_TYPE_BUYER, dept:'生产管理部', desc:'生准线管理者，统筹生准权限', start:'2021-12-20', end:'' },
+  { code:'RebateManagement', name:'返利管理专员', type:ROLE_TYPE_BUYER, dept:'财务', desc:'返利政策维护与核算', start:'2021-12-29', end:'' },
+  { code:'CostTL', name:'成本系长', type:ROLE_TYPE_BUYER, dept:'成本工程部', desc:'成本系长，负责本系成本审批', start:'2022-01-05', end:'' },
+  { code:'CostSC', name:'成本科长', type:ROLE_TYPE_BUYER, dept:'成本工程部', desc:'成本科长，负责本科室成本审批', start:'2022-01-05', end:'' },
+  { code:'DevEngineer', name:'研发工程师', type:ROLE_TYPE_BUYER, dept:'研发', desc:'研发工程师，查看本功能包零件成本（协同）', start:'2022-02-11', end:'' },
+  { code:'RespEngineer', name:'责任工程师', type:ROLE_TYPE_BUYER, dept:'研发', desc:'责任工程师，负责本功能包设计与成本', start:'2022-02-11', end:'' },
+  { code:'CostManager', name:'成本经理', type:ROLE_TYPE_BUYER, dept:'成本工程部', desc:'成本经理，统筹本部门成本与功能包达成', start:'2022-03-01', end:'' }
+];
+var filtered = roles.slice();
+var curPage = 1, pageSize = 15;
+var editingIdx = -1;
+
+/* ================= 渲染 ================= */
+function render() {
+  var tbody = document.getElementById('tbody'); tbody.innerHTML = '';
+  var start = (curPage-1)*pageSize, rows = filtered.slice(start, start+pageSize);
+  rows.forEach(function(r, i) {
+    var gi = start + i;
+    var tr = document.createElement('tr');
+    tr.innerHTML =
+      '<td>'+(gi+1)+'</td>' +
+      '<td class="text-left">'+r.code+'</td>' +
+      '<td>'+r.name+'</td>' +
+      '<td>'+roleTypeTag(r.type)+'</td>' +
+      '<td class="new-col">'+(r.dept? '<span class="tag tag-blue">'+r.dept+'</span>':'<span class="muted">未填</span>')+'</td>' +
+      '<td class="new-col text-left" title="'+esc(r.desc)+'">'+ (r.desc? esc(r.desc) : '<span class="muted">未填</span>') +'</td>' +
+      '<td>'+(r.start||'')+'</td>' +
+      '<td>'+(r.end||'<span class="muted">长期</span>')+'</td>' +
+      '<td><span class="op-link" onclick="openEdit('+gi+')">编辑</span></td>';
+    tbody.appendChild(tr);
+  });
+  document.getElementById('totalText').innerText = '共 ' + filtered.length + ' 条';
+  var tc = document.getElementById('totalCount'); if(tc) tc.innerText = filtered.length;
+  renderPage();
+}
+function roleTypeTag(t){
+  var map = {
+    '采购商角色':'tag-blue', '采购商初始化角色':'tag-blue',
+    '供应商角色':'tag-orange', '供应商初始化角色':'tag-orange',
+    '注册初始化角色':'tag-gray'
+  };
+  var cls = map[t] || 'tag-blue';
+  return '<span class="tag '+cls+'">'+(t||'采购商角色')+'</span>';
+}
+function esc(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function renderPage() {
+  var pages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  if (curPage > pages) curPage = pages;
+  var nums = document.getElementById('pageNums'); nums.innerHTML = '';
+  for (var p=1; p<=pages && p<=7; p++) {
+    var b = document.createElement('span');
+    b.className = 'page-btn' + (p===curPage?' active':'');
+    b.innerText = p; b.onclick = (function(pp){return function(){gotoPage(pp);};})(p);
+    nums.appendChild(b);
+  }
+  document.getElementById('prevBtn').className = 'page-btn' + (curPage<=1?' disabled':'');
+  document.getElementById('nextBtn').className = 'page-btn' + (curPage>=pages?' disabled':'');
+  document.getElementById('gotoInput').value = curPage;
+}
+function gotoPage(p){ var pages=Math.max(1,Math.ceil(filtered.length/pageSize)); if(p<1)p=1; if(p>pages)p=pages; curPage=p; render(); }
+
+/* ================= 查询 ================= */
+function doSearch(){
+  var c=document.getElementById('qCode').value.trim(), n=document.getElementById('qName').value.trim(),
+      d=document.getElementById('qDate').value, dp=document.getElementById('qDept').value;
+  filtered = roles.filter(function(r){
+    if(c && r.code.indexOf(c)<0) return false;
+    if(n && r.name.indexOf(n)<0) return false;
+    if(d && r.start!==d) return false;
+    if(dp && (r.dept||'').indexOf(dp)<0) return false;
+    return true;
+  });
+  curPage=1; render();
+}
+function resetSearch(){ ['qCode','qName','qDate','qDept'].forEach(function(id){document.getElementById(id).value='';}); filtered=roles.slice(); curPage=1; render(); }
+function toggleSearch(){ var a=document.getElementById('searchArea'),i=document.getElementById('collapseIco'); if(a.style.display==='none'){a.style.display='block';i.textContent='∧';}else{a.style.display='none';i.textContent='∨';} }
+
+/* ================= 新增/编辑 ================= */
+var langArr=[];
+function openEdit(gi){
+  editingIdx = (gi===null||gi===undefined)? -1 : gi;
+  document.getElementById('editTitle').innerText = editingIdx<0? '新增角色':'编辑角色';
+  var r = editingIdx<0? {code:'',name:'',type:ROLE_TYPE_BUYER,dept:'',desc:'',start:today(),end:''} : filtered[editingIdx];
+  document.getElementById('fCode').value = r.code;
+  document.getElementById('fCode').readOnly = editingIdx>=0;
+  document.getElementById('fStart').value = r.start||today();
+  document.getElementById('fEnd').value = r.end||'';
+  document.getElementById('fName').value = r.name;
+  document.getElementById('fDept').value = r.dept||'';
+  document.getElementById('fDesc').value = r.desc||'';
+  document.getElementById('fType').value = r.type || '采购商角色';
+  langArr = [{lang:'简体中文', name:r.name}];
+  renderLang();
+  buildTree(r);
+  clearErr();
+  document.getElementById('editMask').classList.add('show');
+}
+function today(){ var d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function renderLang(){
+  var box=document.getElementById('langList'); box.innerHTML='';
+  langArr.forEach(function(l,i){ if(i===0)return; var d=document.createElement('div'); d.className='flex-gap mt8'; d.innerHTML='<select style="width:110px;"><option>'+l.lang+'</option><option>English</option></select><input type="text" value="'+esc(l.name)+'" style="flex:1;" onchange="langArr['+i+'].name=this.value"><button class="btn btn-default btn-sm" onclick="langArr.splice('+i+',1);renderLang()">删除</button>'; box.appendChild(d); });
+}
+function addLang(){ langArr.push({lang:'English',name:''}); renderLang(); }
+function toggleTree(h){ var b=document.getElementById('treeBody'),i=document.getElementById('treeIco'); b.classList.toggle('hide'); i.textContent=b.classList.contains('hide')?'▸':'▾'; }
+function clearErr(){ document.querySelectorAll('#editMask .form-item').forEach(function(f){f.classList.remove('error');}); }
+
+var PERM_TREE=[
+  {name:'采购部数字运营看板'},{name:'分析报表'},
+  {name:'账户权限',children:[{name:'用户权限'},{name:'角色维护'},{name:'数据权限配置'},{name:'字段权限配置'},{name:'统一统筹页'}]},
+  {name:'车型项目管理'},{name:'零件认领'},{name:'成本分析报表'},{name:'价格管理'},{name:'零件成本'}
+];
+function buildTree(r){
+  var box=document.getElementById('permTree'); box.innerHTML='';
+  PERM_TREE.forEach(function(n){ box.appendChild(treeNode(n,0)); });
+}
+function treeNode(n,lv){
+  var wrap=document.createElement('div'); wrap.className='tree-node';
+  var hasC=n.children&&n.children.length;
+  wrap.innerHTML='<label class="ck"><input type="checkbox" '+(hasC?'':'')+'> '+n.name+'</label>';
+  if(hasC){ var c=document.createElement('div'); c.className='tree-children'; n.children.forEach(function(cc){c.appendChild(treeNode(cc,lv+1));}); wrap.appendChild(c); }
+  return wrap;
+}
+function saveRole(){
+  var ok=true;
+  var code=document.getElementById('fCode').value.trim(), name=document.getElementById('fName').value.trim(),
+      start=document.getElementById('fStart').value, dept=document.getElementById('fDept').value.trim(),
+      desc=document.getElementById('fDesc').value.trim(), type=document.getElementById('fType').value;
+  function mark(id,cond){ var f=document.getElementById(id).closest('.form-item'); f.classList.toggle('error',!cond); if(!cond)ok=false; }
+  /* 必填仅保留主属性：角色编码/角色名称/角色类型/生效日期；管理部门、角色说明均非必填 */
+  mark('fCode',!!code); mark('fName',!!name); mark('fStart',!!start);
+  if(!ok) return;
+  if(editingIdx<0){
+    if(roles.some(function(r){return r.code===code;})){ alert('角色编码已存在：'+code); return; }
+    roles.unshift({code:code,name:name,type:type,dept:dept,desc:desc,start:start,end:document.getElementById('fEnd').value});
+  } else {
+    var r=filtered[editingIdx]; r.name=name; r.type=type; r.dept=dept; r.desc=desc; r.start=start; r.end=document.getElementById('fEnd').value;
+  }
+  closeEdit(); doSearch();
+  alert(editingIdx<0? '新增角色成功！':'保存成功！');
+}
+function closeEdit(){ document.getElementById('editMask').classList.remove('show'); }
+
+/* ================= 导入 ================= */
+function openImport(){ document.getElementById('importFileName').value=''; document.getElementById('importMask').classList.add('show'); }
+function closeImport(){ document.getElementById('importMask').classList.remove('show'); }
+function onPickFile(inp){ if(inp.files&&inp.files[0]) document.getElementById('importFileName').value=inp.files[0].name; }
+function downloadTpl(){ alert('已下载导入模板.xlsx\n固定 7 列：角色编码*｜角色名称*｜角色类型*｜生效时间*｜管理部门｜角色说明｜失效时间\n\n必填：角色编码/角色名称/角色类型（恒必填）、生效时间（新增行必填、更新行留空＝保持原值）\n角色类型＝单值枚举 5 项；失效时间留空＝长期有效；同文件内重复角色编码＝报错不覆盖。'); }
+function confirmImport(){
+  var fn=document.getElementById('importFileName').value;
+  if(!fn){ alert('请先选择要导入的 .xlsx 文件'); return; }
+  closeImport();
+  alert('导入完成：新增 3 条、更新 5 条\n按角色编码 upsert，回显「新增 X 条 / 更新 Y 条」。');
+}
+
+/* ================= 导出（筛选后全量，不受分页影响） ================= */
+function doExport(){
+  alert('已导出角色清单.xlsx\n范围：当前筛选条件下全部命中数据 '+filtered.length+' 条（非当前页）\n导出列＝导入模板 7 列：角色编码/角色名称/角色类型/生效时间/管理部门/角色说明/失效时间\n\n可用于"导出 → 补填管理部门/角色说明 → 回填导入"闭环。');
+}
+function doExportPerm(){
+  var scope = filtered.length===roles.length? '全部角色' : '当前筛选结果 '+filtered.length+' 个角色';
+  alert('已按角色导出菜单权限明细.xlsx\n范围：'+scope+'\n以【角色】为单位导出该角色已配置的菜单/按钮权限明细（权限配置统一在本页维护，导出入口收敛至此）。');
+}
+
+render();
+</script>
+</body>
+</html>

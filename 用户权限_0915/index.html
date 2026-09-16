@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>用户权限优化 V5.2 · 改造页面原型导航</title>
+<link rel="stylesheet" href="_common/gpm.css">
+<style>
+  body { overflow:auto; }
+  .nav-wrap { max-width:1200px; margin:0 auto; padding:32px 24px; }
+  .nav-header { margin-bottom:24px; }
+  .nav-header h1 { font-size:24px; color:#303133; }
+  .nav-header .sub { color:#909399; margin-top:8px; font-size:14px; line-height:1.7; }
+  .ver-tag { display:inline-block; background:#1869e1; color:#fff; font-size:12px; padding:2px 10px; border-radius:10px; margin-left:10px; vertical-align:3px; }
+  .cards { display:grid; grid-template-columns:repeat(2,1fr); gap:16px; }
+  .card { background:#fff; border:1px solid #ebeef5; border-radius:6px; padding:18px 20px; cursor:pointer; transition:all .15s; }
+  .card:hover { border-color:#1869e1; box-shadow:0 4px 14px rgba(24,105,225,.12); transform:translateY(-2px); }
+  .card .c-title { font-size:16px; font-weight:bold; color:#303133; display:flex; align-items:center; gap:8px; }
+  .card .c-file { font-size:12px; color:#c0c4cc; font-family:monospace; margin-top:2px; }
+  .card .c-desc { font-size:13px; color:#606266; margin-top:10px; line-height:1.7; }
+  .card .c-tags { margin-top:12px; display:flex; flex-wrap:wrap; gap:6px; }
+  .type-new { background:#f0f9eb; color:#67c23a; border:1px solid #e1f3d8; }
+  .type-mod { background:#ecf5ff; color:#1869e1; border:1px solid #d9ecff; }
+  .type-v52 { background:#fef0f0; color:#f56c6c; border:1px solid #fde2e2; }
+  .section-t { font-size:15px; font-weight:bold; color:#303133; margin:26px 0 12px; padding-left:10px; border-left:4px solid #1869e1; }
+  .map-table { width:100%; border-collapse:collapse; background:#fff; margin-top:8px; }
+  .map-table th,.map-table td { border:1px solid #ebeef5; padding:10px 12px; font-size:13px; text-align:left; }
+  .map-table th { background:#fafafa; color:#909399; font-weight:500; }
+  .map-table .g1 { color:#1869e1; font-weight:bold; }
+  .note-box { background:#fffbe6; border:1px solid #ffe58f; border-radius:6px; padding:14px 18px; font-size:13px; color:#ad6800; line-height:1.8; margin-top:18px; }
+</style>
+</head>
+<body>
+<div class="nav-wrap">
+  <div class="nav-header">
+    <h1>系统用户权限优化改造 · 页面原型导航<span class="ver-tag">0915</span></h1>
+    <div class="sub">
+      依据《用户权限管理蓝图详设 1.0_0915》+ 0914/0915 评审与业务口径（<b>移除领域（成本）/部门/功能包开关，改为代码写死取报表列</b>；新增「启用扩展权限」开关+扩展条件子表；数据版本走扩展SQL；AI批量提取去掉；统一统筹页新增「领域（采购）」Tab、取消「零件号」Tab），<br>
+      结合真实前端（cloud-gacmsrm-front，Vue2 + Element UI 蓝白主题）页面风格产出。共 <b>8 个页面</b>，含真实数据与交互逻辑。点击卡片进入。
+    </div>
+  </div>
+
+  <div class="section-t">账户权限（权限中心）</div>
+  <div class="cards">
+    <div class="card" onclick="go('01_用户权限.html')">
+      <div class="c-title">用户权限<span class="tag type-mod">改造</span></div>
+      <div class="c-file">01_用户权限.html</div>
+      <div class="c-desc">账号与组织身份、角色绑定。列表共 <b>19 列</b>：新增集团SAP工号、手机号、邮箱、一/二/三级部门、在职状态、离职日期、转岗前岗位/转岗时间、角色、生效/失效日期；工具条对齐生产 5 按钮并新增「更新用户」；移除「权限」列。</div>
+      <div class="c-tags"><span class="tag type-mod">集团SAP工号</span><span class="tag type-mod">IAM三级部门</span><span class="tag type-mod">在职离职</span><span class="tag type-mod">转岗字段</span><span class="tag type-new">更新用户</span></div>
+    </div>
+    <div class="card" onclick="go('02_角色维护.html')">
+      <div class="c-title">角色维护<span class="tag type-mod">改造</span></div>
+      <div class="c-file">02_角色维护.html</div>
+      <div class="c-desc">新增「管理部门、角色说明」2 列（<b>备注性质、非必填</b>）；管理部门筛选改<b>模糊文本</b>；导入固定 <b>7 列</b>、按角色编码 upsert；导出＝筛选后<b>全量</b>；角色类型定稿 <b>5 项枚举</b>；<b>取消批量编辑</b>与勾选 UI；新增「按角色导出菜单权限」。</div>
+      <div class="c-tags"><span class="tag type-mod">管理部门列</span><span class="tag type-mod">角色说明列</span><span class="tag type-mod">导入7列</span><span class="tag type-mod">类型5项</span><span class="tag type-new">按角色导出权限</span></div>
+    </div>
+    <div class="card" onclick="go('03_数据权限配置.html')">
+      <div class="c-title">数据权限配置<span class="tag type-mod">改造</span></div>
+      <div class="c-file">03_数据权限配置.html</div>
+      <div class="c-desc">「领域」拆为采购/成本两个独立开关；<b>移除「领域（成本）／部门／功能包」3 个开关</b>（代码写死、直接读报表列）；新增「<b>启用扩展权限</b>」开关 + 「<b>扩展条件</b>」子表（结构化/高级SQL）承载部门·功能包·数据版本；「维度间关系」改表达式输入。</div>
+      <div class="c-tags"><span class="tag type-v52">启用扩展权限</span><span class="tag type-v52">扩展条件子表</span><span class="tag type-mod">领域拆采购/成本</span><span class="tag type-mod">维度间关系</span></div>
+    </div>
+    <div class="card" onclick="go('04_字段权限配置.html')">
+      <div class="c-title">字段权限配置<span class="tag type-new">新增</span></div>
+      <div class="c-file">04_字段权限配置.html</div>
+      <div class="c-desc">选页面→按角色屏蔽字段 + 人员例外三态（跟随角色/放开/收紧）；判定顺序＝人员例外 &gt; 角色（从严）&gt; 默认；命中无权字段在<b>列表/详情/导出/接口四端</b>统一输出 *。按钮集 5 个：保存配置／从角色模板复制／全选屏蔽／全部放开；<b>不含预览效果</b>、<b>不含字段分组列</b>。</div>
+      <div class="c-tags"><span class="tag type-new">角色模板</span><span class="tag type-new">人员例外三态</span><span class="tag type-new">四端脱敏*</span><span class="tag type-new">无预览</span></div>
+    </div>
+    <div class="card" onclick="go('05_字段元数据维护.html')">
+      <div class="c-title">敏感字段元数据维护<span class="tag type-new">新增</span></div>
+      <div class="c-file">05_字段元数据维护.html</div>
+      <div class="c-desc">维护「页面×字段编码×字段中文名」的<b>敏感字段库</b>（入库即敏感），作为字段权限配置的<b>唯一底表</b>。不含「是否敏感」「字段分组」列；<b>AI 批量提取已去掉</b>，改由研发提供/线下导入。编码 <b>模块:页面:字段</b> 强校验。</div>
+      <div class="c-tags"><span class="tag type-new">敏感字段库</span><span class="tag type-new">入库即敏感</span><span class="tag type-new">编码强校验</span><span class="tag type-new">无AI提取</span></div>
+    </div>
+    <div class="card" onclick="go('06_统一统筹页.html')">
+      <div class="c-title">统一统筹页<span class="tag type-new">新增</span></div>
+      <div class="c-file">06_统一统筹页.html</div>
+      <div class="c-desc">Tab 集中维护「人员↔车型 / 品牌×海内外 / <b>领域（采购）</b>」可见范围；<b>取消「零件号」Tab</b>（与零件认领重复）。定位为<b>「补位」</b>：能读来源的读来源 + 人工补充。可见对象改用<b>多选弹窗</b>，不支持自由输入；上游同步记录<b>只读</b>。</div>
+      <div class="c-tags"><span class="tag type-new">人员↔对象</span><span class="tag type-new">领域(采购)Tab</span><span class="tag type-new">多选弹窗</span><span class="tag type-new">上游只读</span></div>
+    </div>
+  </div>
+
+  <div class="section-t">业务模块（数据来源 / 应用效果）</div>
+  <div class="cards">
+    <div class="card" onclick="go('07_车型项目管理.html')">
+      <div class="c-title">车型项目管理<span class="tag type-mod">改造</span></div>
+      <div class="c-file">07_车型项目管理.html</div>
+      <div class="c-desc">作为「车型↔零件」关系数据来源（不另建独立管控页）。项目列表可展开查看零件 BOM，含 EBOM/MTOC/人工补录来源标记。</div>
+      <div class="c-tags"><span class="tag type-mod">车型↔零件</span><span class="tag type-mod">关系来源</span><span class="tag type-mod">不建独立页</span></div>
+    </div>
+    <div class="card" onclick="go('08_成本分析报表.html')">
+      <div class="c-title">成本分析报表<span class="tag type-mod">改造</span></div>
+      <div class="c-file">08_成本分析报表.html</div>
+      <div class="c-desc">本期报表<b>均只看发布数据</b>（无实时/发布切换）；数据范围按报表「领域／部门／功能包／责任工程师」列过滤（代码写死）；金额字段按字段权限脱敏。可切换<b>领域经理／部门经理／使用工程师</b>演示效果。</div>
+      <div class="c-tags"><span class="tag type-mod">仅发布</span><span class="tag type-mod">按报表列过滤</span><span class="tag type-mod">字段脱敏</span><span class="tag type-mod">三类角色演示</span></div>
+    </div>
+  </div>
+
+  <div class="section-t">方案 ↔ 页面 映射</div>
+  <table class="map-table">
+    <thead><tr><th>方案改造点</th><th>对应页面</th><th>类型</th><th>关键交互</th></tr></thead>
+    <tbody>
+      <tr><td class="g1">移除领域（成本）/部门/功能包开关、代码写死取报表列</td><td>03_数据权限配置</td><td>改造</td><td>不设开关的维度以「写死」只读标记呈现</td></tr>
+      <tr><td class="g1">新增「启用扩展权限」开关 + 扩展条件子表</td><td>03_数据权限配置</td><td>新增</td><td>勾选开关 → 展开扩展条件表（列名/操作符/值/关系）</td></tr>
+      <tr><td>数据版本可见性改走扩展SQL</td><td>03_数据权限配置</td><td>改造</td><td>扩展条件中以「版本字段 + IN 发布类取值」实现</td></tr>
+      <tr><td>角色维护取消批量编辑 + 导入7列 + 类型5项</td><td>02_角色维护</td><td>改造</td><td>去勾选UI + 管理部门模糊筛选 + 导出全量</td></tr>
+      <tr><td>用户权限列表19列 + 更新用户 + 多SSO账号</td><td>01_用户权限</td><td>改造</td><td>集团SAP工号列 + 一/二/三级部门 + 转岗字段 + 5个SSO只读</td></tr>
+      <tr><td>字段权限（四端脱敏 + 人员例外三态）</td><td>04_字段权限配置</td><td>新增</td><td>角色/人员双模式切换 + 5个按钮 + 无预览</td></tr>
+      <tr><td>敏感字段元数据（底表，AI提取去掉）</td><td>05_字段元数据维护</td><td>新增</td><td>CRUD + 导入导出（编码强校验）</td></tr>
+      <tr><td>人员↔对象统一统筹（含领域采购Tab）</td><td>06_统一统筹页</td><td>新增</td><td>3个Tab + 多选弹窗 + 上游同步只读</td></tr>
+      <tr><td>车型↔零件关系来源（不建独立页）</td><td>07_车型项目管理</td><td>改造</td><td>项目列表 + 展开零件BOM</td></tr>
+      <tr><td>报表仅看发布数据 + 按报表列过滤 + 脱敏</td><td>08_成本分析报表</td><td>改造</td><td>三类角色切换演示数据范围与脱敏</td></tr>
+    </tbody>
+  </table>
+
+  <div class="note-box">
+    <b>使用说明：</b>① 直接双击打开任意 HTML 即可在浏览器中查看/交互（纯前端，无需服务）。② 各页共用 <code>_common/gpm.css</code> 与 <code>_common/gpm-layout.js</code>，风格对齐真实前端（侧栏 #283346、主色 #1869e1、Element UI 蓝白主题）。③ 页面内红色<span style="color:#f56c6c">「新 / V5.2」角标</span>标注本次新增能力。④ 数据为演示 Mock，交互逻辑已按详设实现。
+  </div>
+</div>
+<script>function go(f){ location.href = f; }</script>
+</body>
+</html>

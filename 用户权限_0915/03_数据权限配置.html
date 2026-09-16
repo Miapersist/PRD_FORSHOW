@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>数据权限配置 - GPM系统</title>
+<link rel="stylesheet" href="_common/gpm.css">
+<style>
+  .new-col{background:#f0f7ff;} th.new-col{background:#e3f0ff;}
+  .dim-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px 24px;}
+  .dim-cell{display:flex;align-items:center;justify-content:space-between;border:1px solid #ebeef5;border-radius:4px;padding:10px 14px;}
+  .dim-cell .dim-name{font-size:13px;color:#303133;}
+  .dim-cell .dim-desc{font-size:11px;color:#909399;margin-top:2px;}
+  .dim-cell.v52{border-color:#b3d8ff;background:#f0f7ff;}
+  .dim-cell.locked{background:#fafafa;border-style:dashed;color:#909399;}
+  .scenario{background:#fffbe6;border:1px solid #ffe58f;border-radius:4px;padding:12px 14px;font-size:13px;color:#ad6800;line-height:1.7;}
+  .scenario b{color:#d48806;}
+  .ext-table{width:100%;border-collapse:collapse;font-size:12px;}
+  .ext-table th,.ext-table td{border:1px solid #ebeef5;padding:6px 8px;text-align:center;}
+  .ext-table th{background:#fafafa;color:#606266;font-weight:500;}
+  .ext-table input,.ext-table select{height:26px;border:1px solid #dcdfe6;border-radius:3px;padding:0 5px;font-size:12px;width:100%;box-sizing:border-box;}
+  .ext-table textarea{border:1px solid #dcdfe6;border-radius:3px;padding:4px 5px;font-size:12px;width:100%;box-sizing:border-box;font-family:monospace;resize:vertical;}
+  .ext-table tr.sql-row td{background:#fffdf5;}
+  .sql-bar{background:#fffbe6;border:1px solid #ffe58f;border-radius:4px;padding:10px 12px;margin-top:10px;}
+  .sql-result{margin-top:10px;background:#fff;border:1px solid #e5e6eb;border-radius:4px;padding:10px 12px;font-size:12px;line-height:1.8;max-height:200px;overflow:auto;}
+  .sql-result .ok{color:#67c23a;font-weight:600;}
+  .sql-result .bad{color:#f56c6c;font-weight:600;}
+  .sql-result table{width:100%;border-collapse:collapse;margin-top:6px;}
+  .sql-result th,.sql-result td{border:1px solid #ebeef5;padding:4px 6px;font-size:12px;text-align:left;}
+  .sql-result th{background:#fafafa;}
+  .mode-tag{font-size:11px;padding:1px 5px;border-radius:3px;}
+  .mode-tag.s1{background:#e3f0ff;color:#1869e1;}
+  .mode-tag.s2{background:#fff3e0;color:#d48806;}
+</style>
+</head>
+<body>
+
+<template id="page-body">
+<div class="page" style="padding:0;display:flex;flex-direction:column;overflow:hidden;">
+  <div class="panel" style="flex:1;display:flex;flex-direction:column;min-height:0;border:none;border-radius:0;">
+    <div class="search-area" id="searchArea">
+      <div class="search-form">
+        <div class="search-item"><label>功能编码：</label>
+          <select id="qFunc"><option value="">全部</option><option>成本分析</option><option>价格管理</option><option>零件成本</option><option>报表中心</option><option>车型项目管理</option></select></div>
+        <div class="search-item"><label>角色名称：</label><input type="text" id="qRole" placeholder="请输入角色名称"></div>
+        <div class="search-item new-col"><label>领域（采购）：</label>
+          <select id="qDomainBuy"><option value="">全部</option><option>内外饰</option><option>车身</option><option>底盘</option></select></div>
+        <div class="search-item new-col"><label>领域（成本）：</label>
+          <select id="qDomainCost"><option value="">全部</option><option>内外饰</option><option>车身</option><option>底盘</option><option>智联</option></select></div>
+        <div class="search-item new-col"><label>部门：</label>
+          <select id="qDept"><option value="">全部</option><option>车身开发部</option><option>架构开发部</option></select></div>
+        <div class="search-item new-col"><label>启用扩展权限：</label>
+          <select id="qExt"><option value="">全部</option><option>是</option><option>否</option></select></div>
+        <div class="search-actions">
+          <button class="btn btn-primary" onclick="doSearch()">查询</button>
+          <button class="btn btn-default" onclick="resetSearch()">重置</button>
+          <span class="collapse-link" onclick="toggleSearch()">收起 <span id="collapseIco">∧</span></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="table-toolbar">
+      <button class="btn btn-primary" onclick="openEdit(-1)">新增</button>
+      <div class="right"><span class="toolbar-note">共 <b id="totalText">0</b> 条配置</span></div>
+    </div>
+
+    <div class="alert alert-info" style="margin-top:0;">
+      <span class="ico">ⓘ</span>
+      <div><b>本次改造</b>：① 「领域」拆分为<b>采购/成本</b>两个独立开关；② <b>移除「部门」「功能包」「领域（成本）」3 个开关</b>——直接读报表对应列，<b>代码写死</b>；③ 新增<b>「启用扩展权限」开关</b>（并列维度开关）+ <b>「扩展条件」子表</b>，承载部门·功能包·数据版本。</div>
+    </div>
+
+    <div class="table-wrap" style="flex:1;overflow:auto;min-height:0;">
+      <table class="list-table">
+        <thead><tr>
+          <th style="width:46px;">序号</th>
+          <th style="min-width:100px;">功能编码</th>
+          <th style="min-width:100px;">角色名称</th>
+          <th style="width:70px;">优先级</th>
+          <th style="width:56px;">全部</th>
+          <th style="width:80px;">启用工厂</th>
+          <th style="width:80px;">启用品类</th>
+          <th style="width:80px;">启用物料</th>
+          <th style="width:80px;">启用创建人</th>
+          <th class="new-col" style="width:100px;">领域（采购）<span class="new-col-badge">更名</span></th>
+          <th style="width:100px;">品牌&海内外</th>
+          <th style="width:80px;">车型</th>
+          <th class="new-col" style="width:90px;">零件号前缀<span class="new-col-badge">新</span></th>
+          <th class="new-col" style="width:110px;">启用扩展权限<span class="new-col-badge">新</span></th>
+          <th style="min-width:90px;">创建人</th>
+          <th style="width:90px;">操作</th>
+        </tr></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+
+    <div class="pagination-bar">
+      <select onchange="pageSize=parseInt(this.value);renderPage();"><option>15条/页</option><option>30条/页</option></select>
+      <span id="totalText2">共 0 条</span>
+      <div class="flex" style="gap:4px;">
+        <span class="page-btn disabled" id="prevBtn" onclick="gotoPage(curPage-1)">&lt;</span>
+        <span id="pageNums" class="flex" style="gap:4px;"></span>
+        <span class="page-btn" id="nextBtn" onclick="gotoPage(curPage+1)">&gt;</span>
+      </div>
+    </div>
+  </div>
+</div>
+</template>
+
+<!-- ============ 新增/编辑 弹窗 ============ -->
+<div class="modal-mask" id="editMask">
+  <div class="modal-wrap" style="width:980px;">
+    <div class="modal-head"><h3 id="editTitle">数据权限配置新增</h3><span class="modal-close" onclick="closeEdit()">×</span></div>
+    <div class="modal-body" style="max-height:70vh;overflow:auto;">
+      <div class="form-row">
+        <div class="form-item"><label><span class="req">*</span>功能编码：</label>
+          <div class="field-col">
+            <select id="fFunc"><option value="">请选择功能编码</option><option>成本分析</option><option>价格管理</option><option>零件成本</option><option>报表中心</option><option>车型项目管理</option></select>
+            <div class="err">功能必填</div>
+          </div>
+        </div>
+        <div class="form-item"><label><span class="req">*</span>角色名称：</label>
+          <div class="field-col">
+            <select id="fRole"><option value="">请选择角色</option><option>领域经理</option><option>部门经理</option><option>使用工程师</option><option>成本管理员</option><option>采购员</option></select>
+            <div class="err">角色必填</div>
+          </div>
+        </div>
+        <div class="form-item"><label><span class="req">*</span>优先级：</label>
+          <div class="field-col"><input type="text" id="fPriority" value="99"><div class="err">优先级必填</div>
+            <div class="muted">多角色时数据范围取并集，优先级仅保留排序语义</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 维度开关 -->
+      <div class="panel" style="margin-bottom:14px;">
+        <div class="panel-title" style="font-size:14px;">数据范围维度开关（共 10 项，含「全部」）</div>
+        <div class="panel-body">
+          <div class="dim-grid" id="dimGrid"></div>
+        </div>
+      </div>
+
+      <!-- 代码写死维度（不设开关） -->
+      <div class="panel" style="margin-bottom:14px;">
+        <div class="panel-title" style="font-size:14px;">不设开关的维度（代码写死，直接读报表列）</div>
+        <div class="panel-body">
+          <div class="dim-grid">
+            <div class="dim-cell locked"><div><div class="dim-name">领域（成本）</div><div class="dim-desc">报表「领域」列，代码写死</div></div><span class="tag tag-gray">写死</span></div>
+            <div class="dim-cell locked"><div><div class="dim-name">部门</div><div class="dim-desc">报表「部门」列，代码写死</div></div><span class="tag tag-gray">写死</span></div>
+            <div class="dim-cell locked"><div><div class="dim-name">功能包</div><div class="dim-desc">报表「功能包」列，代码写死</div></div><span class="tag tag-gray">写死</span></div>
+            <div class="dim-cell locked"><div><div class="dim-name">责任工程师（使用工程师）</div><div class="dim-desc">报表「责任工程师」列，代码写死</div></div><span class="tag tag-gray">写死</span></div>
+          </div>
+          <div class="muted mt8">上述维度由代码写死对应关系，业务侧不需要配置、也不提供开关。</div>
+        </div>
+      </div>
+
+      <!-- 维度间关系 -->
+      <div class="panel" style="margin-bottom:14px;">
+        <div class="panel-title" style="font-size:14px;">维度间关系</div>
+        <div class="panel-body">
+          <div class="field-col">
+            <input type="text" id="fRelExpr" placeholder="如：车型 AND 工厂 或 (车型 AND 工厂) OR 领域" style="width:100%;height:32px;border:1px solid #dcdfe6;border-radius:4px;padding:0 10px;">
+            <div class="err" id="relErr"></div>
+            <div class="muted">仅允许「本次已勾选的维度名」＋ AND / OR ＋ 圆括号；默认全部取并集，存量零迁移；保留原始表达式（不做中文回显）。</div>
+          </div>
+          <div class="scenario mt12" id="scenarioBox"></div>
+        </div>
+      </div>
+
+      <!-- 启用扩展权限 + 扩展条件子表 -->
+      <div class="panel" style="margin-bottom:4px;border-color:#b3d8ff;">
+        <div class="panel-title" style="font-size:14px;background:#e3f0ff;">
+          <label class="ck" style="font-weight:600;"><input type="checkbox" id="fExtOn" onchange="toggleExt()"> 启用扩展权限 <span class="new-col-badge">新</span></label>
+          <span class="muted" style="font-weight:400;margin-left:10px;">勾选后展开「扩展条件」子表，未勾选则不读取任何扩展条件</span>
+        </div>
+        <div class="panel-body" id="extBox" style="display:none;">
+          <div class="flex-gap" style="justify-content:space-between;margin-bottom:8px;">
+            <span class="muted">结构化条件为主、高级 SQL 兜底；承载<b>部门·功能包·数据版本</b>等个性化过滤</span>
+            <button class="btn btn-primary btn-sm" onclick="addExtRow()">新增条件</button>
+          </div>
+          <table class="ext-table">
+            <thead><tr>
+              <th style="width:100px;">配置条件名称</th>
+              <th style="width:96px;">数据来源<span class="req" style="color:#f56c6c;">*</span></th>
+              <th style="width:96px;">列名</th>
+              <th style="width:88px;">操作符</th>
+              <th>值 / SQL 片段</th>
+              <th style="width:70px;">条件间关系</th>
+              <th style="width:52px;">启用</th>
+              <th style="width:120px;">操作</th>
+            </tr></thead>
+            <tbody id="extTbody"></tbody>
+          </table>
+
+          <!-- 模式二：高级 SQL 专属操作区 -->
+          <div class="sql-bar" id="sqlBar" style="display:none;">
+            <div class="flex-gap" style="flex-wrap:wrap;align-items:center;">
+              <b style="font-size:13px;color:#d48806;">模式二（高级 SQL）强制校验链：</b>
+              <button class="btn btn-default btn-sm" onclick="sqlCheck()">1. 语法校验</button>
+              <button class="btn btn-default btn-sm" onclick="sqlDryRun()">2. 试运行</button>
+              <button class="btn btn-default btn-sm" onclick="sqlDataPreview()">3. 数据预览</button>
+              <button class="btn btn-default btn-sm" onclick="extImpact(sqlRowIdx())">影响预览</button>
+              <button class="btn btn-default btn-sm" onclick="extRollback(sqlRowIdx())">回滚上一版本</button>
+              <span class="muted" style="font-size:12px;">（保存前须完成语法校验、试运行与数据预览）</span>
+            </div>
+            <div id="sqlResult" class="sql-result" style="display:none;"></div>
+          </div>
+
+          <div class="muted mt8">模式二（高级 SQL）保存时强制<b>语法校验 + 试运行 + 数据预览</b>，并提供<b>影响预览</b>与<b>回滚上一版本</b>；误配导致查询报错时由引擎捕获并提示，不静默失败。</div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-default" onclick="closeEdit()">取消</button>
+      <button class="btn btn-primary" onclick="saveConfig()">确认</button>
+    </div>
+  </div>
+</div>
+
+<script src="_common/gpm-layout.js"></script>
+<script>
+GpmLayout.init({
+  activePage: 'dataAuthConfig',
+  breadcrumb: ['首页', '用户权限', '数据权限配置'],
+  tabs: [
+    { key:'home', label:'首页', closable:false },
+    { key:'userAccess', label:'用户权限', page:'01_用户权限.html' },
+    { key:'dataAuthConfig', label:'数据权限配置' }
+  ],
+  activeTab: 'dataAuthConfig'
+});
+
+/* ================= 维度定义（10 项：含「全部」+ 启用扩展权限） ================= */
+var DIMS = [
+  { key:'all',             name:'全部',             desc:'全部维度开关', isNew:false },
+  { key:'enableOrg',       name:'启用工厂权限',     desc:'组织/工厂维度（原有保留）', isNew:false },
+  { key:'enableCategory',  name:'启用品类分工权限', desc:'采购品类分工（原有）', isNew:false },
+  { key:'enableMaterial',  name:'启用物料分工权限', desc:'即零件认领（原有）', isNew:false },
+  { key:'enableCreated',   name:'启用创建人权限',   desc:'按创建人过滤（原有）', isNew:false },
+  { key:'enableDomainBuy', name:'启用领域权限（采购）', desc:'取统一统筹页-领域（采购）', isNew:true },
+  { key:'enableBrand',     name:'启用品牌&海内外权限', desc:'品牌×海内外组合授权', isNew:false },
+  { key:'enableCarModel',  name:'启用车型权限',     desc:'成本经理/工装项目成本管理', isNew:false },
+  { key:'enablePartPrefix',name:'启用零件号前缀',   desc:'CE 件号分组号前 4 位', isNew:false },
+  { key:'enableExt',       name:'启用扩展权限',     desc:'开启后配置扩展条件子表', isNew:true }
+];
+
+/* ================= Mock 数据 ================= */
+var configs = [
+  { func:'成本分析', role:'领域经理', priority:99, all:'否', org:'否', cat:'否', mat:'否', cre:'否', domBuy:'是', brand:'否', car:'否', prefix:'否', ext:'是', rel:'', by:'gacmadmin' },
+  { func:'成本分析', role:'部门经理', priority:98, all:'否', org:'否', cat:'否', mat:'否', cre:'否', domBuy:'否', brand:'是', car:'否', prefix:'否', ext:'是', rel:'', by:'gacmadmin' },
+  { func:'报表中心', role:'使用工程师', priority:99, all:'否', org:'否', cat:'否', mat:'否', cre:'否', domBuy:'否', brand:'否', car:'否', prefix:'否', ext:'是', rel:'', by:'gacmadmin' },
+  { func:'价格管理', role:'采购员', priority:99, all:'否', org:'是', cat:'是', mat:'是', cre:'是', domBuy:'否', brand:'否', car:'否', prefix:'否', ext:'否', rel:'工厂 OR 品类', by:'gacmadmin' },
+  { func:'价格管理', role:'采购科长', priority:98, all:'否', org:'是', cat:'是', mat:'否', cre:'否', domBuy:'否', brand:'是', car:'否', prefix:'否', ext:'否', rel:'工厂 AND 品牌', by:'gacmadmin' },
+  { func:'零件成本', role:'成本管理员', priority:99, all:'否', org:'是', cat:'否', mat:'否', cre:'否', domBuy:'否', brand:'否', car:'是', prefix:'否', ext:'否', rel:'', by:'gacmadmin' }
+];
+var filtered = configs.slice();
+var curPage=1, pageSize=15, editIdx=-1;
+var dimState = {};
+var extRows = [];
+
+/* ================= 渲染 ================= */
+function yn(v){ return v==='是'? '<span class="tag tag-green">是</span>':'<span class="tag tag-gray">否</span>'; }
+function render(){
+  var tbody=document.getElementById('tbody'); tbody.innerHTML='';
+  var start=(curPage-1)*pageSize, rows=filtered.slice(start,start+pageSize);
+  rows.forEach(function(c,i){
+    var gi=start+i;
+    var tr=document.createElement('tr');
+    tr.innerHTML =
+      '<td>'+(gi+1)+'</td>'+
+      '<td>'+c.func+'</td>'+
+      '<td>'+c.role+'</td>'+
+      '<td>'+c.priority+'</td>'+
+      '<td>'+yn(c.all)+'</td>'+
+      '<td>'+yn(c.org)+'</td>'+
+      '<td>'+yn(c.cat)+'</td>'+
+      '<td>'+yn(c.mat)+'</td>'+
+      '<td>'+yn(c.cre)+'</td>'+
+      '<td class="new-col">'+yn(c.domBuy)+'</td>'+
+      '<td>'+yn(c.brand)+'</td>'+
+      '<td>'+yn(c.car)+'</td>'+
+      '<td class="new-col">'+yn(c.prefix)+'</td>'+
+      '<td class="new-col">'+yn(c.ext)+'</td>'+
+      '<td>'+c.by+'</td>'+
+      '<td><span class="op-link" onclick="openEdit('+gi+')">编辑</span><span class="op-link danger" onclick="delConfig('+gi+')">删除</span></td>';
+    tbody.appendChild(tr);
+  });
+  document.getElementById('totalText').innerText=filtered.length;
+  document.getElementById('totalText2').innerText='共 '+filtered.length+' 条';
+  renderPage();
+}
+function renderPage(){
+  var pages=Math.max(1,Math.ceil(filtered.length/pageSize)); if(curPage>pages)curPage=pages;
+  var nums=document.getElementById('pageNums'); nums.innerHTML='';
+  for(var p=1;p<=pages&&p<=7;p++){var b=document.createElement('span');b.className='page-btn'+(p===curPage?' active':'');b.innerText=p;b.onclick=(function(pp){return function(){gotoPage(pp);};})(p);nums.appendChild(b);}
+  document.getElementById('prevBtn').className='page-btn'+(curPage<=1?' disabled':'');
+  document.getElementById('nextBtn').className='page-btn'+(curPage>=pages?' disabled':'');
+}
+function gotoPage(p){var pages=Math.max(1,Math.ceil(filtered.length/pageSize));if(p<1)p=1;if(p>pages)p=pages;curPage=p;render();}
+
+/* ================= 查询 ================= */
+function doSearch(){
+  var f=qFunc.value,r=qRole.value.trim(),db=qDomainBuy.value,dc=qDomainCost.value,dp=qDept.value,e=qExt.value;
+  filtered=configs.filter(function(c){
+    if(f && c.func!==f)return false;
+    if(r && c.role.indexOf(r)<0)return false;
+    if(db && c.domBuy!==db)return false;
+    if(e && c.ext!==e)return false;
+    return true;
+  });
+  curPage=1; render();
+}
+function resetSearch(){qFunc.value='';qRole.value='';qDomainBuy.value='';qDomainCost.value='';qDept.value='';qExt.value='';filtered=configs.slice();curPage=1;render();}
+function toggleSearch(){var a=document.getElementById('searchArea'),i=document.getElementById('collapseIco');if(a.style.display==='none'){a.style.display='block';i.textContent='∧';}else{a.style.display='none';i.textContent='∨';}}
+
+/* ================= 编辑 ================= */
+function buildDimGrid(){
+  var grid=document.getElementById('dimGrid'); grid.innerHTML='';
+  DIMS.forEach(function(d){
+    var cell=document.createElement('div');
+    cell.className='dim-cell'+(d.isNew?' v52':'');
+    cell.innerHTML='<div><div class="dim-name">'+d.name+(d.isNew?' <span class="new-col-badge">新</span>':'')+'</div><div class="dim-desc">'+d.desc+'</div></div>'+
+      '<label class="switch"><input type="checkbox" '+(dimState[d.key]?'checked':'')+' onchange="dimState[\''+d.key+'\']=this.checked;refreshScenario()"><span class="slider"></span></label>';
+    grid.appendChild(cell);
+  });
+}
+function openEdit(gi){
+  editIdx=gi;
+  document.getElementById('editTitle').innerText = gi<0? '数据权限配置新增':'数据权限配置编辑';
+  var c = gi<0? null : filtered[gi];
+  dimState={}; extRows=[];
+  if(c){
+    dimState.all=c.all==='是'; dimState.enableOrg=c.org==='是'; dimState.enableCategory=c.cat==='是';
+    dimState.enableMaterial=c.mat==='是'; dimState.enableCreated=c.cre==='是'; dimState.enableDomainBuy=c.domBuy==='是';
+    dimState.enableBrand=c.brand==='是'; dimState.enableCarModel=c.car==='是'; dimState.enablePartPrefix=c.prefix==='是';
+    dimState.enableExt=c.ext==='是';
+    fFunc.value=c.func; fRole.value=c.role; fPriority.value=c.priority; fRelExpr.value=c.rel||'';
+    document.getElementById('fExtOn').checked = c.ext==='是';
+    if(c.ext==='是'){
+      extRows=[
+        { name:'部门',   src:'报表字段', col:'dept',   op:'等于', val:'车身开发部', rel:'AND', on:true },
+        { name:'数据版本', src:'SQL片段', col:'',       op:'',     val:'AND paramSource IN (\'month\',\'monthP\',\'monthSingle\',\'valvePoint\')', rel:'AND', on:true, dryRunOk:true, hasHistory:true, prevVal:'' }
+      ];
+    }
+  } else {
+    dimState={all:false,enableOrg:true,enableCategory:false,enableMaterial:false,enableCreated:false,enableDomainBuy:false,enableBrand:false,enableCarModel:false,enablePartPrefix:false,enableExt:false};
+    fFunc.value=''; fRole.value=''; fPriority.value='99'; fRelExpr.value='';
+    document.getElementById('fExtOn').checked=false;
+  }
+  buildDimGrid(); renderExt(); toggleExt(); refreshScenario();
+  document.getElementById('editMask').classList.add('show');
+}
+function toggleExt(){
+  var on = document.getElementById('fExtOn').checked;
+  document.getElementById('extBox').style.display = on? 'block':'none';
+  dimState.enableExt = on;
+  refreshScenario();
+}
+function renderExt(){
+  var tb=document.getElementById('extTbody'); tb.innerHTML='';
+  var hasSql=false;
+  extRows.forEach(function(r,i){
+    var isSql = r.src==='SQL片段';
+    if(isSql) hasSql=true;
+    var tr=document.createElement('tr');
+    if(isSql) tr.className='sql-row';
+    var valCell, colCell, opCell;
+    if(isSql){
+      /* 模式二：SQL 片段输入，列名/操作符置灰 */
+      valCell = '<textarea rows="2" onchange="extRows['+i+'].val=this.value" placeholder="如：AND dept IN (SELECT dept FROM rpt_dept WHERE mgr=&quot;{user}&quot;)">'+esc(r.val)+'</textarea>';
+      colCell = '<span class="muted">—</span>';
+      opCell  = '<span class="muted">—</span>';
+    } else {
+      /* 模式一：结构化 */
+      valCell = '<input value="'+esc(r.val)+'" onchange="extRows['+i+'].val=this.value">';
+      colCell = '<input value="'+esc(r.col)+'" onchange="extRows['+i+'].col=this.value">';
+      opCell  = '<select onchange="extRows['+i+'].op=this.value">'+['为空','不为空','等于','不等于','IN','NOT IN'].map(function(o){return '<option '+(o===r.op?'selected':'')+'>'+o+'</option>';}).join('')+'</select>';
+    }
+    tr.innerHTML=
+      '<td><input value="'+esc(r.name)+'" onchange="extRows['+i+'].name=this.value"></td>'+
+      '<td><select onchange="changeExtSrc('+i+',this.value)">'+
+        '<option value="报表字段" '+(r.src==='报表字段'?'selected':'')+'>结构化条件</option>'+
+        '<option value="SQL片段" '+(r.src==='SQL片段'?'selected':'')+'>SQL 片段</option>'+
+      '</select>'+
+      '<div class="mode-tag '+(isSql?'s2':'s1')+'" style="margin-top:4px;">模式'+(isSql?'二':'一')+'</div></td>'+
+      '<td>'+colCell+'</td>'+
+      '<td>'+opCell+'</td>'+
+      '<td>'+valCell+'</td>'+
+      '<td><select onchange="extRows['+i+'].rel=this.value"><option '+(r.rel==='AND'?'selected':'')+'>AND</option><option '+(r.rel==='OR'?'selected':'')+'>OR</option></select></td>'+
+      '<td><input type="checkbox" '+(r.on?'checked':'')+' onchange="extRows['+i+'].on=this.checked"></td>'+
+      '<td style="white-space:nowrap;">'+
+        '<span class="op-link" onclick="extImpact('+i+')">影响预览</span>'+
+        (r.hasHistory? '<span class="op-link" onclick="extRollback('+i+')">回滚</span>' : '')+
+        '<span class="op-link danger" onclick="extRows.splice('+i+',1);renderExt()">删除</span>'+
+      '</td>';
+    tb.appendChild(tr);
+  });
+  if(!extRows.length) tb.innerHTML='<tr><td colspan="8" style="color:#909399;padding:14px;">暂无扩展条件，点击「新增条件」添加</td></tr>';
+  document.getElementById('sqlBar').style.display = hasSql? 'block':'none';
+}
+
+function addExtRow(){
+  extRows.push({name:'部门',src:'报表字段',col:'',op:'等于',val:'',rel:'AND',on:true});
+  renderExt();
+}
+function changeExtSrc(i, v){
+  extRows[i].src = v;
+  /* 切到 SQL 模式：清空结构化字段 */
+  if(v==='SQL片段'){ extRows[i].col=''; extRows[i].op=''; }
+  renderExt();
+}
+function esc(s){ return String(s||'').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
+
+/* ================= 模式二：高级 SQL 强制校验链 ================= */
+
+function sqlRowIdx(){
+  for(var i=0;i<extRows.length;i++){ if(extRows[i].src==='SQL片段') return i; }
+  return -1;
+}
+function sqlOut(html){
+  var box=document.getElementById('sqlResult');
+  box.style.display='block';
+  box.innerHTML = html;
+}
+/* 1. 语法校验 */
+function sqlCheck(){
+  var i=sqlRowIdx();
+  if(i<0){ sqlOut('<span class="bad">✗ 当前无 SQL 片段条件</span>'); return false; }
+  var sql=(extRows[i].val||'').trim();
+  if(!sql){ sqlOut('<span class="bad">✗ 语法校验未通过：SQL 片段为空</span>'); return false; }
+  /* 演示：检查括号配对 */
+  var l=(sql.match(/\(/g)||[]).length, r=(sql.match(/\)/g)||[]).length;
+  if(l!==r){ sqlOut('<span class="bad">✗ 语法校验未通过：圆括号不配对（左 '+l+' / 右 '+r+'），请修正后重试</span>'); return false; }
+  sqlOut('<span class="ok">✓ 语法校验通过</span><br>解析结果：SQL 片段合法，可进行试运行。');
+  return true;
+}
+/* 2. 试运行 */
+function sqlDryRun(){
+  if(!sqlCheck()) return;
+  var i=sqlRowIdx();
+  extRows[i].dryRunOk = true;
+  sqlOut('<span class="ok">✓ 试运行通过</span>　（已执行 EXPLAIN，未写入数据）<br>'+
+    '预估扫描行数：<b>12,480</b>　|　预估耗时：<b>0.32s</b>　|　是否走索引：<b>是</b><br>'+
+    '<span class="muted">试运行仅做解析与预估，不落库、不影响线上数据。</span>');
+}
+/* 3. 数据预览 */
+function sqlDataPreview(){
+  if(!sqlCheck()) return;
+  sqlOut('<span class="ok">✓ 数据预览</span>（按当前条件命中的数据，前 5 条）'+
+    '<table><thead><tr><th>项目代号</th><th>车型</th><th>领域</th><th>部门</th><th>功能包</th></tr></thead>'+
+    '<tbody>'+
+    '<tr><td>PRJ-AY2025</td><td>AION Y</td><td>内外饰</td><td>车身开发部</td><td>内饰包</td></tr>'+
+    '<tr><td>PRJ-AY2025</td><td>AION Y</td><td>内外饰</td><td>车身开发部</td><td>仪表包</td></tr>'+
+    '<tr><td>PRJ-M8-2024</td><td>传祺M8</td><td>车身</td><td>车身开发部</td><td>车身覆盖件</td></tr>'+
+    '<tr><td>PRJ-HGT-2026</td><td>昊铂GT</td><td>底盘</td><td>架构开发部</td><td>底盘结构件</td></tr>'+
+    '<tr><td>PRJ-AS2026</td><td>AION S Plus</td><td>座舱</td><td>智能座舱产品线</td><td>智能座舱包</td></tr>'+
+    '</tbody></table>'+
+    '<span class="muted">共命中 <b>3,214</b> 条数据；确认真实命中范围符合预期后再保存生效。</span>');
+}
+/* 影响预览 */
+function extImpact(i){
+  if(i<0 || !extRows[i]){ sqlOut('<span class="bad">✗ 请先新增一条扩展条件</span>'); return; }
+  var r=extRows[i];
+  sqlOut('<b>影响预览 · '+esc(r.name||'（未命名条件）')+'</b><br>'+
+    '受影响功能编码：<b>'+esc(document.getElementById('fFunc').value||'（未选择）')+'</b><br>'+
+    '受影响角色：<b>'+esc(document.getElementById('fRole').value||'（未选择）')+'</b><br>'+
+    '命中数据量：<b>3,214</b> 条（较配置前 <span class="bad">↑ +218 条</span>）<br>'+
+    '受影响页面：本次 4 张报表（功能包及采购成本达成 / 部门达成情况 / 采购成本达成 / 变化履历）<br>'+
+    '<span class="muted">影响预览仅做估算，不落库。</span>');
+}
+/* 回滚上一版本 */
+function extRollback(i){
+  if(i<0 || !extRows[i]){ sqlOut('<span class="bad">✗ 请先新增一条扩展条件</span>'); return; }
+  var r=extRows[i];
+  if(!confirm('确认将该扩展条件回滚到上一版本？\n（当前未保存的修改将丢失）')) return;
+  r.val = r.prevVal!==undefined? r.prevVal : '';
+  renderExt();
+  sqlOut('<span class="ok">✓ 已回滚到上一版本</span><br>条件「'+esc(r.name||'—')+'」已恢复为改前值。');
+}
+
+function refreshScenario(){
+  var on = DIMS.filter(function(d){return dimState[d.key];}).map(function(d){return d.name.replace(/^启用/,'');});
+  var box=document.getElementById('scenarioBox');
+  var dimsText = on.length? on.join('、') : '（未勾选维度）';
+  var expr = document.getElementById('fRelExpr').value.trim();
+  box.innerHTML='<b>已勾选维度：</b>'+dimsText+'<br>'+
+    '<b>当前表达式：</b>'+(expr? esc(expr) : '（空，默认全部取并集）')+'<br>'+
+    '<span class="muted">取交（AND）生效时，若某条数据该维度为空则该数据被剔除；错误提示会指明具体出错字符位置。</span>';
+}
+
+function saveConfig(){
+  if(!fFunc.value){alert('功能必填');return;}
+  if(!fRole.value){alert('角色必填');return;}
+  var ext = document.getElementById('fExtOn').checked;
+  /* 模式二（高级 SQL）保存前强制校验 */
+  if(ext){
+    var si=sqlRowIdx();
+    if(si>=0){
+      var sr=extRows[si];
+      if(!(sr.val||'').trim()){ alert('模式二（高级 SQL）校验未通过：SQL 片段为空。'); return; }
+      var l=(sr.val.match(/\(/g)||[]).length, r=(sr.val.match(/\)/g)||[]).length;
+      if(l!==r){ alert('模式二（高级 SQL）语法校验未通过：圆括号不配对，请修正后重试。'); return; }
+      if(!sr.dryRunOk){
+        alert('模式二（高级 SQL）请先完成【语法校验 → 试运行 → 数据预览】后再保存。');
+        return;
+      }
+    }
+  }
+  var obj={
+    func:fFunc.value, role:fRole.value, priority:parseInt(fPriority.value)||99, all:dimState.all?'是':'否',
+    org:dimState.enableOrg?'是':'否', cat:dimState.enableCategory?'是':'否', mat:dimState.enableMaterial?'是':'否',
+    cre:dimState.enableCreated?'是':'否', domBuy:dimState.enableDomainBuy?'是':'否', brand:dimState.enableBrand?'是':'否',
+    car:dimState.enableCarModel?'是':'否', prefix:dimState.enablePartPrefix?'是':'否',
+    ext:ext?'是':'否', rel:document.getElementById('fRelExpr').value.trim(), by:'董海涛'
+  };
+  if(editIdx<0){ configs.unshift(obj); } else { Object.assign(filtered[editIdx], obj); }
+  closeEdit(); doSearch();
+  alert((editIdx<0?'新增':'保存')+'成功！配置即时生效（下次登录生效）。');
+}
+function closeEdit(){document.getElementById('editMask').classList.remove('show');}
+function delConfig(gi){
+  if(confirm('确认删除该数据权限配置吗？')){ var c=filtered[gi]; var idx=configs.indexOf(c); if(idx>-1)configs.splice(idx,1); doSearch(); }
+}
+
+render();
+</script>
+</body>
+</html>

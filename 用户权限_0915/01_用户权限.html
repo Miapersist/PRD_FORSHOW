@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>用户权限 - GPM系统</title>
+<link rel="stylesheet" href="_common/gpm.css">
+<style>
+  .new-col { background:#f0f7ff; }
+  th.new-col { background:#e3f0ff; }
+  .role-row td { background:#fff; }
+  .mini-table { width:100%; border-collapse:collapse; }
+  .mini-table th,.mini-table td { border:1px solid #ebeef5; padding:8px; font-size:13px; text-align:center; }
+  .mini-table th { background:#fafafa; color:#909399; font-weight:500; }
+  .mini-table select,.mini-table input[type=date]{ height:28px;border:1px solid #dcdfe6;border-radius:4px;padding:0 6px;font-size:13px;width:100%; }
+  .org-path { color:#606266; font-size:12px; }
+  .role-ell{ display:inline-block; max-width:150px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; vertical-align:bottom; }
+</style>
+</head>
+<body>
+
+<template id="page-body">
+<!-- ================= 列表页 ================= -->
+<div id="listView" class="page" style="padding:0;display:flex;flex-direction:column;overflow:hidden;">
+  <div class="panel" style="flex:1;display:flex;flex-direction:column;min-height:0;border:none;border-radius:0;">
+    <div class="search-area" id="searchArea">
+      <div class="search-form">
+        <div class="search-item"><label>账号：</label><input type="text" id="qUser" placeholder="请输入账号"></div>
+        <div class="search-item new-col"><label>姓名：</label><input type="text" id="qName" placeholder="请输入姓名"></div>
+        <div class="search-item new-col"><label>一级部门：</label>
+          <select id="qDept1"><option value="">全部</option><option>研发总院</option><option>采购本部</option><option>财务本部</option><option>数字化部</option></select></div>
+        <div class="search-item new-col"><label>二级部门：</label>
+          <select id="qDept2"><option value="">全部</option><option>车身开发部</option><option>架构开发部</option><option>智联开发部</option><option>成本工程部</option></select></div>
+        <div class="search-item new-col"><label>三级部门：</label>
+          <select id="qDept3"><option value="">全部</option><option>内外饰科</option><option>底盘科</option><option>成本管理科</option></select></div>
+        <div class="search-item new-col"><label>在职状态：</label>
+          <select id="qStatus"><option value="">全部</option><option>在职</option><option>离职</option></select></div>
+        <div class="search-item new-col"><label>生效日期：</label><input type="text" id="qStart" placeholder="选择日期" onfocus="this.type='date'"></div>
+        <div class="search-item new-col"><label>转岗前岗位：</label><input type="text" id="qPrePost" placeholder="请输入岗位"></div>
+        <div class="search-item"><label>角色：</label>
+          <select id="qRole"><option value="">全部</option><option>成本管理员</option><option>采购员</option><option>使用工程师</option><option>领域经理</option><option>部门经理</option></select></div>
+        <div class="search-actions">
+          <button class="btn btn-primary" onclick="doSearch()">查询</button>
+          <button class="btn btn-default" onclick="resetSearch()">重置</button>
+          <span class="collapse-link" onclick="toggleSearch()">收起 <span id="collapseIco">∧</span></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="table-toolbar">
+      <button class="btn btn-primary" onclick="openEdit(-1)">新增用户</button>
+      <button class="btn btn-default" onclick="tip('导入用户（用户导入模板.xlsx）·仅支持新增')">导入用户</button>
+      <button class="btn btn-default" onclick="tip('导入角色（用户-组织权限导入模板.xlsx）')">导入角色</button>
+      <button class="btn btn-default" onclick="tip('导入原有角色组织权限（用户角色权限导入模板.xlsx）')">导入原有角色组织权限</button>
+      <button class="btn btn-default new-col" onclick="tip('导入用户模板更新已有账户')"><b>更新用户</b> <span class="new-col-badge">新</span></button>
+      <button class="btn btn-default" onclick="doExportCustom()">自定义导出</button>
+      <div class="right"><span class="toolbar-note">共 <b id="totalText">0</b> 个账号</span></div>
+    </div>
+
+    <div class="alert alert-info" style="margin-top:0;">
+      <span class="ico">ⓘ</span>
+      <div><b>本次改造</b>：① 列表补齐生产现状字段（工号／手机号／邮箱／账号类型／生效日期／失效日期）并新增<b>集团SAP工号</b>（DDHR 提供，与「工号」非同一字段）；② 承接 IAM <b>一级/二级/三级部门</b>、岗位、在职/离职、离职日期；③ 新增<b>转岗前岗位／转岗时间</b>（每 30 分钟增量同步，岗位变化写入）；④ 移除「权限」列（收敛到【角色维护】）、「岗位」「角色」列保留；⑤ <b>新增「更新用户」</b>按钮（现网「导入用户」只能新增、不能更新）。</div>
+    </div>
+
+    <div class="table-wrap" style="flex:1;overflow:auto;min-height:0;">
+      <table class="list-table">
+        <thead><tr>
+          <th style="width:46px;">序号</th>
+          <th style="min-width:100px;">账号</th>
+          <th style="width:90px;">工号</th>
+          <th class="new-col" style="width:100px;">集团SAP工号<span class="new-col-badge">新</span></th>
+          <th style="width:80px;">姓名</th>
+          <th class="new-col" style="width:110px;">手机号<span class="new-col-badge">新</span></th>
+          <th class="new-col" style="min-width:150px;">邮箱<span class="new-col-badge">新</span></th>
+          <th class="new-col" style="min-width:100px;">一级部门<span class="new-col-badge">新</span></th>
+          <th class="new-col" style="min-width:100px;">二级部门<span class="new-col-badge">新</span></th>
+          <th class="new-col" style="min-width:100px;">三级部门<span class="new-col-badge">新</span></th>
+          <th style="min-width:90px;">岗位</th>
+          <th class="new-col" style="width:80px;">在职状态<span class="new-col-badge">新</span></th>
+          <th class="new-col" style="width:96px;">离职日期<span class="new-col-badge">新</span></th>
+          <th class="new-col" style="min-width:96px;">转岗前岗位<span class="new-col-badge">新</span></th>
+          <th class="new-col" style="width:120px;">转岗时间<span class="new-col-badge">新</span></th>
+          <th style="width:90px;">账号类型</th>
+          <th class="new-col" style="min-width:150px;">角色<span class="new-col-badge">新</span></th>
+          <th class="new-col" style="width:100px;">生效日期<span class="new-col-badge">新</span></th>
+          <th class="new-col" style="width:100px;">失效日期<span class="new-col-badge">新</span></th>
+          <th style="width:70px;">操作</th>
+        </tr></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+
+    <div class="pagination-bar">
+      <select onchange="pageSize=parseInt(this.value);renderPage();"><option>15条/页</option><option>30条/页</option><option>50条/页</option></select>
+      <span id="totalText2">共 0 条</span>
+      <div class="flex" style="gap:4px;">
+        <span class="page-btn disabled" id="prevBtn" onclick="gotoPage(curPage-1)">&lt;</span>
+        <span id="pageNums" class="flex" style="gap:4px;"></span>
+        <span class="page-btn" id="nextBtn" onclick="gotoPage(curPage+1)">&gt;</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= 编辑页（子账号维护） ================= -->
+<div id="editView" class="page" style="padding:0;display:none;flex-direction:column;overflow:hidden;">
+  <div class="panel-title" style="background:#fff;border-bottom:1px solid #e5e6eb;">
+    <span id="editTitle">子账号维护</span>
+    <span class="btn btn-default btn-sm" onclick="closeEdit()">‹ 返回列表</span>
+  </div>
+  <div style="flex:1;overflow:auto;min-height:0;">
+    <div class="panel" style="margin:12px;">
+      <div class="panel-title">基本信息</div>
+      <div class="panel-body" style="padding:18px;">
+        <div class="form-row">
+          <div class="form-item"><label><span class="req">*</span>账号：</label>
+            <div class="field-col">
+              <div class="flex-gap"><input type="text" id="fUser" placeholder="选择/输入账号" style="flex:1;"><button class="btn btn-default btn-sm" onclick="quickPickUser()">快速搜索</button></div>
+            </div>
+          </div>
+          <div class="form-item"><label><span class="req">*</span>姓名：</label>
+            <input type="text" id="fName"></div>
+          <div class="form-item"><label><span class="req">*</span>手机：</label>
+            <input type="text" id="fPhone"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-item"><label>邮箱：</label><input type="text" id="fEmail"></div>
+          <div class="form-item"><label>账号类型：</label>
+            <select id="fType" disabled><option>BUYER（采购商）</option></select></div>
+          <div class="form-item"><label>工号：</label><input type="text" id="fEmpNo" readonly></div>
+        </div>
+
+        <!-- IAM 下发部门（一/二/三级拆开，只读） -->
+        <div class="form-row new-col">
+          <div class="form-item"><label>一级部门：</label><input type="text" id="fD1" readonly placeholder="由IAM下发"></div>
+          <div class="form-item"><label>二级部门：</label><input type="text" id="fD2" readonly placeholder="由IAM下发"></div>
+          <div class="form-item"><label>三级部门：</label><input type="text" id="fD3" readonly placeholder="由IAM下发"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-item"><label>集团SAP工号：</label><input type="text" id="fGacCode" readonly placeholder="由DDHR下发"></div>
+          <div class="form-item"><label>公司名称：</label><input type="text" id="fCompany" readonly></div>
+          <div class="form-item"><label>岗位：</label><input type="text" id="fPost" readonly></div>
+        </div>
+        <div class="form-row new-col">
+          <div class="form-item"><label>在职状态：</label><input type="text" id="fStatus" readonly></div>
+          <div class="form-item"><label>离职日期：</label><input type="text" id="fLeave" readonly placeholder="由IAM/HR下发"></div>
+          <div class="form-item"><label>转岗前岗位：</label><input type="text" id="fPrePost" readonly></div>
+          <div class="form-item"><label>转岗时间：</label><input type="text" id="fPreTime" readonly></div>
+        </div>
+        <div class="form-row">
+          <div class="form-item"><label><span class="req">*</span>生效日期：</label><input type="date" id="fStart"></div>
+          <div class="form-item"><label>失效日期：</label><input type="date" id="fEnd"></div>
+        </div>
+
+        <!-- 5 个 SSO 账号（只读） -->
+        <div class="panel" style="margin-top:14px;border:1px dashed #dcdfe6;">
+          <div class="panel-title" style="font-size:13px;background:#fafafa;">SSO 账号（IAM 下发，只读）<span class="new-col-badge">新</span></div>
+          <div class="panel-body">
+            <div class="form-row">
+              <div class="form-item"><label>埃安SSO账号：</label><input type="text" id="fAionSso" readonly></div>
+              <div class="form-item"><label>集团SSO账号：</label><input type="text" id="fGroupSso" readonly></div>
+            </div>
+            <div class="form-row">
+              <div class="form-item"><label>传祺SSO账号：</label><input type="text" id="fTruSso" readonly></div>
+              <div class="form-item"><label>研究院SSO账号：</label><input type="text" id="fRndSso" readonly></div>
+            </div>
+            <div class="form-row">
+              <div class="form-item"><label>业权一体化美云SSO账号：</label><input type="text" id="fBpiSso" readonly></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 组织权限 -->
+    <div class="collapse-item" style="margin:0 12px;">
+      <div class="collapse-head">组织权限（IAM 下发，支持多工厂/部门层级）<button class="btn btn-primary btn-sm" onclick="openOrgTree()">新增</button></div>
+      <div class="collapse-body">
+        <table class="mini-table"><thead><tr><th>组织名称（全路径）</th><th style="width:130px;">生效日期</th><th style="width:130px;">失效日期</th><th style="width:70px;">操作</th></tr></thead>
+        <tbody id="orgTbody"></tbody></table>
+      </div>
+    </div>
+
+    <!-- 角色权限 -->
+    <div class="collapse-item" style="margin:12px;">
+      <div class="collapse-head">角色权限（行内绑定，支持多角色）<button class="btn btn-primary btn-sm" onclick="addRoleRow()">新增</button></div>
+      <div class="collapse-body">
+        <table class="mini-table"><thead><tr><th>角色名称</th><th style="width:130px;">生效日期</th><th style="width:130px;">失效日期</th><th style="width:70px;">操作</th></tr></thead>
+        <tbody id="roleTbody"></tbody></table>
+      </div>
+    </div>
+  </div>
+  <div class="footer-bar">
+    <button class="btn btn-default" onclick="closeEdit()">取消</button>
+    <button class="btn btn-primary" id="resetPwdBtn" style="display:none;" onclick="openResetPwd()">重置密码</button>
+    <button class="btn btn-primary" onclick="saveUser()">提交</button>
+  </div>
+</div>
+</template>
+
+<!-- ============ 组织树弹窗 ============ -->
+<div class="modal-mask" id="orgMask">
+  <div class="modal-wrap" style="width:520px;">
+    <div class="modal-head"><h3>添加组织权限</h3><span class="modal-close" onclick="closeOrgTree()">×</span></div>
+    <div class="modal-body">
+      <input type="text" id="orgSearch" placeholder="搜索组织名称" style="width:100%;height:32px;border:1px solid #dcdfe6;border-radius:4px;padding:0 10px;margin-bottom:8px;" oninput="renderOrgTree()">
+      <div class="tree-box" id="orgTree" style="max-height:340px;"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-default" onclick="closeOrgTree()">取消</button>
+      <button class="btn btn-primary" onclick="confirmOrgTree()">确定</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 重置密码弹窗 ============ -->
+<div class="modal-mask" id="pwdMask">
+  <div class="modal-wrap" style="width:420px;">
+    <div class="modal-head"><h3>重置密码</h3><span class="modal-close" onclick="closeResetPwd()">×</span></div>
+    <div class="modal-body">
+      <div class="form-row"><div class="form-item"><label><span class="req">*</span>新密码：</label><input type="text" id="pwd1" placeholder="8位以上，含大小写+数字"></div></div>
+      <div class="form-row"><div class="form-item"><label><span class="req">*</span>确认新密码：</label><input type="text" id="pwd2"></div></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-default" onclick="closeResetPwd()">取消</button>
+      <button class="btn btn-primary" onclick="confirmResetPwd()">提交</button>
+    </div>
+  </div>
+</div>
+
+<script src="_common/gpm-layout.js"></script>
+<script>
+GpmLayout.init({
+  activePage: 'userAccess',
+  breadcrumb: ['首页', '用户权限', '用户权限'],
+  tabs: [
+    { key:'home', label:'首页', closable:false },
+    { key:'userAccess', label:'用户权限' },
+    { key:'roleMaintenance', label:'角色维护', page:'02_角色维护.html' }
+  ],
+  activeTab: 'userAccess'
+});
+
+/* ================= Mock 数据 ================= */
+var users = [
+  { acc:'zhangsw', emp:'00153049', gac:'GAC1000231', name:'张少伟', phone:'138****0001', email:'zhangsw@gac.com.cn', d1:'采购本部', d2:'成本工程部', d3:'成本管理科', post:'成本管理员', status:'在职', leave:'', prePost:'', preTime:'', roles:['成本管理员','成本系长'], type:'BUYER' },
+  { acc:'wanghf', emp:'00120456', gac:'GAC1000118', name:'王慧芬', phone:'138****0002', email:'wanghf@gac.com.cn', d1:'采购本部', d2:'成本工程部', d3:'成本管理科', post:'成本经理', status:'在职', leave:'', prePost:'', preTime:'', roles:['成本经理'], type:'BUYER' },
+  { acc:'lengdd', emp:'00130778', gac:'GAC1000342', name:'冷丹丹', phone:'138****0003', email:'lengdd@gac.com.cn', d1:'采购本部', d2:'采购部', d3:'采购一科', post:'采购科长', status:'在职', leave:'', prePost:'', preTime:'', roles:['采购科长','采购员'], type:'BUYER' },
+  { acc:'yangys', emp:'00140912', gac:'GAC1000455', name:'杨衍穗', phone:'138****0004', email:'yangys@gac.com.cn', d1:'财务本部', d2:'财务部', d3:'成本核算科', post:'财务科长', status:'在职', leave:'', prePost:'', preTime:'', roles:['财务科长'], type:'BUYER' },
+  { acc:'liude', emp:'00150234', gac:'GAC1000761', name:'刘德', phone:'138****0005', email:'liude@gac.com.cn', d1:'研发总院', d2:'车身开发部', d3:'内外饰科', post:'研发工程师', status:'在职', leave:'', prePost:'', preTime:'', roles:['使用工程师'], type:'BUYER' },
+  { acc:'chenjing', emp:'00160567', gac:'GAC1000883', name:'陈静', phone:'138****0006', email:'chenjing@gac.com.cn', d1:'研发总院', d2:'车身开发部', d3:'内外饰科', post:'责任工程师', status:'在职', leave:'', prePost:'研发工程师', preTime:'2026-06-15 10:22', roles:['使用工程师'], type:'BUYER' },
+  { acc:'zhaolei', emp:'00170890', gac:'GAC1000912', name:'赵磊', phone:'138****0007', email:'zhaolei@gac.com.cn', d1:'研发总院', d2:'架构开发部', d3:'底盘科', post:'研发工程师', status:'在职', leave:'', prePost:'', preTime:'', roles:['使用工程师'], type:'BUYER' },
+  { acc:'sunqian', emp:'00180123', gac:'GAC1001034', name:'孙倩', phone:'138****0008', email:'sunqian@gac.com.cn', d1:'采购本部', d2:'采购部', d3:'采购二科', post:'采购员', status:'在职', leave:'', prePost:'', preTime:'', roles:['采购员'], type:'BUYER' },
+  { acc:'zhoumin', emp:'00190456', gac:'GAC1001156', name:'周敏', phone:'138****0009', email:'zhoumin@gac.com.cn', d1:'财务本部', d2:'财务部', d3:'资金管理科', post:'财务专员', status:'离职', leave:'2026-07-31', prePost:'', preTime:'', roles:['财务专员'], type:'BUYER' },
+  { acc:'wugang', emp:'00200789', gac:'GAC1001278', name:'吴刚', phone:'138****0010', email:'wugang@gac.com.cn', d1:'研发总院', d2:'智联开发部', d3:'智能座舱科', post:'责任工程师', status:'在职', leave:'', prePost:'研发工程师', preTime:'2026-08-20 09:15', roles:['使用工程师'], type:'BUYER' },
+  { acc:'zhengxin', emp:'00210234', gac:'GAC1001390', name:'郑欣', phone:'138****0011', email:'zhengxin@gac.com.cn', d1:'数字化部', d2:'系统运维部', d3:'GPM运维科', post:'系统管理员', status:'在职', leave:'', prePost:'', preTime:'', roles:['成本管理员'], type:'BUYER' },
+  { acc:'fenghua', emp:'00220567', gac:'GAC1001412', name:'冯华', phone:'138****0012', email:'fenghua@gac.com.cn', d1:'研发总院', d2:'架构开发部', d3:'底盘科', post:'责任工程师', status:'在职', leave:'', prePost:'', preTime:'', roles:['使用工程师'], type:'BUYER' },
+  { acc:'chuling', emp:'00230890', gac:'GAC1001534', name:'储玲', phone:'138****0013', email:'chuling@gac.com.cn', d1:'采购本部', d2:'成本工程部', d3:'成本管理科', post:'成本管理员', status:'在职', leave:'', prePost:'', preTime:'', roles:['成本管理员'], type:'BUYER' },
+  { acc:'weiyang', emp:'00240123', gac:'GAC1001656', name:'魏洋', phone:'138****0014', email:'weiyang@gac.com.cn', d1:'研发总院', d2:'车身开发部', d3:'车身科', post:'研发工程师', status:'在职', leave:'', prePost:'', preTime:'', roles:['使用工程师'], type:'BUYER' },
+  { acc:'jiangtao', emp:'00250456', gac:'GAC1001778', name:'姜涛', phone:'138****0015', email:'jiangtao@gac.com.cn', d1:'研发总院', d2:'车身开发部', d3:'车身科', post:'研发工程师', status:'离职', leave:'2026-05-12', prePost:'', preTime:'', roles:['使用工程师'], type:'BUYER' }
+];
+var ALL_ROLES = ['成本管理员','成本系长','成本科长','成本经理','采购员','采购系长','采购科长','财务专员','财务科长','领域经理','部门经理','使用工程师','PL','生准担当'];
+var filtered = users.slice();
+var curPage=1, pageSize=15, editIdx=-1;
+var orgRows=[], roleRows=[];
+
+/* ================= 列表渲染 ================= */
+function statusTag(s){ return s==='在职'? '<span class="tag tag-green">在职</span>':'<span class="tag tag-red">离职</span>'; }
+function render(){
+  var tbody=document.getElementById('tbody'); tbody.innerHTML='';
+  var start=(curPage-1)*pageSize, rows=filtered.slice(start,start+pageSize);
+  rows.forEach(function(u,i){
+    var gi=start+i;
+    /* 角色列：多角色用「；」分隔单行文本，超长截断 + hover 气泡显示全部 */
+    var rolesText=(u.roles||[]).join('；');
+    var roleCell='<span class="role-ell" title="'+rolesText+'">'+rolesText+'</span>';
+    var tr=document.createElement('tr');
+    tr.innerHTML =
+      '<td>'+(gi+1)+'</td>'+
+      '<td><span class="link" onclick="openEdit('+gi+')">'+u.acc+'</span></td>'+
+      '<td>'+u.emp+'</td>'+
+      '<td class="new-col">'+u.gac+'</td>'+
+      '<td>'+u.name+'</td>'+
+      '<td class="new-col">'+u.phone+'</td>'+
+      '<td class="new-col">'+u.email+'</td>'+
+      '<td class="new-col">'+u.d1+'</td>'+
+      '<td class="new-col">'+u.d2+'</td>'+
+      '<td class="new-col">'+u.d3+'</td>'+
+      '<td>'+u.post+'</td>'+
+      '<td class="new-col">'+statusTag(u.status)+'</td>'+
+      '<td class="new-col">'+(u.leave||'<span class="muted">—</span>')+'</td>'+
+      '<td class="new-col">'+(u.prePost||'<span class="muted">—</span>')+'</td>'+
+      '<td class="new-col">'+(u.preTime||'<span class="muted">—</span>')+'</td>'+
+      '<td>'+u.type+'</td>'+
+      '<td class="new-col text-left">'+roleCell+'</td>'+
+      '<td class="new-col">'+(u.start||'2021-08-26')+'</td>'+
+      '<td class="new-col">'+(u.end||'<span class="muted">长期</span>')+'</td>'+
+      '<td><span class="op-link" onclick="openEdit('+gi+')">编辑</span></td>';
+    tbody.appendChild(tr);
+  });
+  document.getElementById('totalText').innerText=filtered.length;
+  document.getElementById('totalText2').innerText='共 '+filtered.length+' 条';
+  renderPage();
+}
+function renderPage(){
+  var pages=Math.max(1,Math.ceil(filtered.length/pageSize)); if(curPage>pages)curPage=pages;
+  var nums=document.getElementById('pageNums'); nums.innerHTML='';
+  for(var p=1;p<=pages&&p<=7;p++){var b=document.createElement('span');b.className='page-btn'+(p===curPage?' active':'');b.innerText=p;b.onclick=(function(pp){return function(){gotoPage(pp);};})(p);nums.appendChild(b);}
+  document.getElementById('prevBtn').className='page-btn'+(curPage<=1?' disabled':'');
+  document.getElementById('nextBtn').className='page-btn'+(curPage>=pages?' disabled':'');
+}
+function gotoPage(p){var pages=Math.max(1,Math.ceil(filtered.length/pageSize));if(p<1)p=1;if(p>pages)p=pages;curPage=p;render();}
+
+/* ================= 查询 ================= */
+function doSearch(){
+  var u=document.getElementById('qUser').value.trim(), nm=document.getElementById('qName').value.trim(),
+      d1=qDept1.value, d2=qDept2.value, d3=qDept3.value, st=qStatus.value,
+      sd=document.getElementById('qStart').value, pp=document.getElementById('qPrePost').value.trim(), ro=qRole.value;
+  filtered=users.filter(function(x){
+    if(u && x.acc.indexOf(u)<0) return false;
+    if(nm && x.name.indexOf(nm)<0) return false;
+    if(d1 && x.d1!==d1)return false; if(d2 && x.d2!==d2)return false; if(d3 && x.d3!==d3)return false;
+    if(st && x.status!==st)return false;
+    if(sd && (x.start||'2021-08-26')!==sd) return false;
+    if(pp && (x.prePost||'').indexOf(pp)<0) return false;
+    if(ro && x.roles.indexOf(ro)<0)return false;
+    return true;
+  });
+  curPage=1; render();
+}
+function resetSearch(){['qUser','qName','qStart','qPrePost'].forEach(function(id){document.getElementById(id).value='';});['qDept1','qDept2','qDept3','qStatus','qRole'].forEach(function(id){document.getElementById(id).value='';});filtered=users.slice();curPage=1;render();}
+function toggleSearch(){var a=document.getElementById('searchArea'),i=document.getElementById('collapseIco');if(a.style.display==='none'){a.style.display='block';i.textContent='∧';}else{a.style.display='none';i.textContent='∨';}}
+function tip(m){alert(m+'\n（原型占位：导入走标准模板下载+上传组件）');}
+function doExportCustom(){ alert('自定义导出（沿用系统历史功能，不新增按钮）\n支持用户自选导出字段，本次新增字段（集团SAP工号、一/二/三级部门、在职状态、离职日期、转岗前岗位、转岗时间、生效/失效日期等）已纳入可选项。'); }
+
+/* ================= 编辑页 ================= */
+function openEdit(gi){
+  editIdx=gi;
+  var u = gi<0? {acc:'',emp:'',gac:'',name:'',phone:'',email:'',d1:'',d2:'',d3:'',post:'',status:'在职',leave:'',prePost:'',preTime:'',roles:[],type:'BUYER'} : filtered[gi];
+  document.getElementById('editTitle').innerText = gi<0? '子账号维护':'编辑 - '+u.acc;
+  fUser.value=u.acc; fUser.readOnly = gi>=0;
+  fName.value=u.name; fPhone.value=u.phone||'138****0000'; fEmail.value=u.email||(u.acc+'@gac.com.cn');
+  fEmpNo.value=u.emp; fGacCode.value=u.gac||''; fCompany.value='广汽集团'; fPost.value=u.post;
+  fD1.value=u.d1; fD2.value=u.d2; fD3.value=u.d3;
+  fStatus.value=u.status; fLeave.value=u.leave||''; fPrePost.value=u.prePost||''; fPreTime.value=u.preTime||'';
+  document.getElementById('fStart').value = u.start||today();
+  document.getElementById('fEnd').value = u.end||'';
+  // 5 个 SSO 账号（只读，IAM 下发）
+  fAionSso.value = u.acc? (u.acc+'_aion') : '';
+  fGroupSso.value = u.acc? (u.acc+'_group') : '';
+  fTruSso.value = u.acc? (u.acc+'_tru') : '';
+  fRndSso.value = u.acc? (u.acc+'_rnd') : '';
+  fBpiSso.value = u.acc? (u.acc+'_bpi') : '';
+  document.getElementById('resetPwdBtn').style.display = gi>=0? 'inline-flex':'none';
+  orgRows = gi<0? [] : [{path:'广汽集团 / '+u.d1+' / '+u.d2, start:today(), end:''}];
+  roleRows = (u.roles||[]).map(function(r){return {role:r,start:today(),end:''};});
+  renderOrgRows(); renderRoleRows();
+  document.getElementById('listView').style.display='none';
+  document.getElementById('editView').style.display='flex';
+}
+function today(){var d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function closeEdit(){document.getElementById('editView').style.display='none';document.getElementById('listView').style.display='flex';render();}
+function quickPickUser(){alert('快速搜索：从 IAM/HR 选人后自动带出姓名/工号/集团SAP工号/公司/一二级三级部门/邮箱/手机/岗位/SSO账号');}
+
+/* ---- 组织权限行 ---- */
+function renderOrgRows(){
+  var tb=document.getElementById('orgTbody'); tb.innerHTML='';
+  orgRows.forEach(function(o,i){
+    var tr=document.createElement('tr'); tr.className='role-row';
+    tr.innerHTML='<td class="text-left org-path">'+o.path+'</td>'+
+      '<td><input type="date" value="'+o.start+'" onchange="orgRows['+i+'].start=this.value"></td>'+
+      '<td><input type="date" value="'+o.end+'" onchange="orgRows['+i+'].end=this.value"></td>'+
+      '<td><span class="op-link danger" onclick="orgRows.splice('+i+',1);renderOrgRows()">删除</span></td>';
+    tb.appendChild(tr);
+  });
+  if(!orgRows.length) tb.innerHTML='<tr><td colspan="4" style="color:#909399;padding:16px;">暂无组织权限，点击"新增"通过组织树添加</td></tr>';
+}
+
+/* ---- 角色权限行 ---- */
+function renderRoleRows(){
+  var tb=document.getElementById('roleTbody'); tb.innerHTML='';
+  roleRows.forEach(function(r,i){
+    var opts=ALL_ROLES.map(function(x){return '<option '+(x===r.role?'selected':'')+'>'+x+'</option>';}).join('');
+    var tr=document.createElement('tr'); tr.className='role-row';
+    tr.innerHTML='<td><select onchange="roleRows['+i+'].role=this.value">'+opts+'</select></td>'+
+      '<td><input type="date" value="'+r.start+'" onchange="roleRows['+i+'].start=this.value"></td>'+
+      '<td><input type="date" value="'+r.end+'" onchange="roleRows['+i+'].end=this.value"></td>'+
+      '<td><span class="op-link danger" onclick="roleRows.splice('+i+',1);renderRoleRows()">删除</span></td>';
+    tb.appendChild(tr);
+  });
+  if(!roleRows.length) tb.innerHTML='<tr><td colspan="4" style="color:#909399;padding:16px;">暂无角色，点击"新增"绑定</td></tr>';
+}
+function addRoleRow(){ roleRows.push({role:ALL_ROLES[0],start:today(),end:''}); renderRoleRows(); }
+
+/* ---- 组织树弹窗 ---- */
+var ORG_TREE=[
+  {name:'广汽集团',children:[
+    {name:'研发总院',children:[{name:'车身开发部',children:[{name:'内外饰科'},{name:'车身科'}]},{name:'架构开发部',children:[{name:'底盘科'}]},{name:'智联开发部',children:[{name:'智能座舱科'}]}]},
+    {name:'采购本部',children:[{name:'采购部',children:[{name:'采购一科'},{name:'采购二科'}]},{name:'成本工程部',children:[{name:'成本管理科'}]}]},
+    {name:'财务本部',children:[{name:'财务部',children:[{name:'成本核算科'},{name:'资金管理科'}]}]},
+    {name:'数字化部',children:[{name:'系统运维部',children:[{name:'GPM运维科'}]}]}
+  ]}
+];
+var orgChecked={};
+function openOrgTree(){orgChecked={};renderOrgTree();document.getElementById('orgMask').classList.add('show');}
+function closeOrgTree(){document.getElementById('orgMask').classList.remove('show');}
+function renderOrgTree(){
+  var box=document.getElementById('orgTree'); box.innerHTML='';
+  ORG_TREE.forEach(function(n){buildOrgNode(box,n,[]);});
+}
+function buildOrgNode(parent,n,path){
+  var full=path.concat([n.name]);
+  var text=full.join(' / ');
+  var wrap=document.createElement('div'); wrap.className='tree-node';
+  wrap.innerHTML='<label class="ck"><input type="checkbox" '+(orgChecked[text]?'checked':'')+' onchange="toggleOrgCk(\''+text+'\',this)"> '+n.name+'</label><span class="muted" style="font-size:11px;margin-left:6px;">'+text+'</span>';
+  parent.appendChild(wrap);
+  if(n.children){var c=document.createElement('div');c.className='tree-children';n.children.forEach(function(cc){buildOrgNode(c,cc,full);});parent.appendChild(c);}
+}
+function toggleOrgCk(id,ck){if(ck.checked)orgChecked[id]=true;else delete orgChecked[id];}
+function confirmOrgTree(){
+  var ids=Object.keys(orgChecked);
+  ids.forEach(function(p){ if(!orgRows.some(function(o){return o.path===p;})) orgRows.push({path:p,start:today(),end:''}); });
+  closeOrgTree(); renderOrgRows();
+}
+
+/* ---- 重置密码 ---- */
+function openResetPwd(){document.getElementById('pwdMask').classList.add('show');}
+function closeResetPwd(){document.getElementById('pwdMask').classList.remove('show');}
+function confirmResetPwd(){var a=pwd1.value,b=pwd2.value;if(!a||a!==b){alert('两次密码不一致或为空');return;}closeResetPwd();alert('密码已重置');}
+
+function saveUser(){
+  if(!fName.value.trim()){alert('请填写姓名');return;}
+  if(editIdx<0){
+    users.unshift({acc:fUser.value||('user'+Date.now()%10000),emp:fEmpNo.value||'0026'+String(Date.now()%10000),gac:fGacCode.value||'',name:fName.value,phone:fPhone.value,email:fEmail.value,d1:'研发总院',d2:'车身开发部',d3:'内外饰科',post:fPost.value||'研发工程师',status:'在职',leave:'',prePost:'',preTime:'',roles:roleRows.map(function(r){return r.role;}),type:'BUYER'});
+  } else {
+    var u=filtered[editIdx]; u.name=fName.value; u.phone=fPhone.value; u.email=fEmail.value; u.roles=roleRows.map(function(r){return r.role;});
+  }
+  closeEdit(); alert(editIdx<0?'新增用户成功！':'保存成功！');
+}
+
+render();
+</script>
+</body>
+</html>

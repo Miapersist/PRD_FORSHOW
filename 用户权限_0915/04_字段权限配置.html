@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>字段权限配置 - GPM系统</title>
+<link rel="stylesheet" href="_common/gpm.css">
+<style>
+  .mode-tabs{display:flex;gap:0;border:1px solid #dcdfe6;border-radius:4px;overflow:hidden;}
+  .mode-tabs .mt{padding:8px 20px;cursor:pointer;font-size:13px;color:#606266;background:#fff;}
+  .mode-tabs .mt.active{background:#1869e1;color:#fff;}
+  .field-row.blocked td{background:#fef0f0;}
+  .preview-bar{background:#f0f5ff;border:1px solid #d6e4ff;border-radius:4px;padding:10px 14px;font-size:13px;}
+  .kpi{display:inline-flex;flex-direction:column;align-items:center;padding:6px 18px;border-right:1px solid #e5e6eb;}
+  .kpi:last-child{border-right:none;}
+  .kpi .num{font-size:20px;font-weight:bold;color:#1869e1;}
+  .kpi .lab{font-size:12px;color:#909399;margin-top:2px;}
+  .kpi .num.red{color:#f56c6c;}
+</style>
+</head>
+<body>
+
+<template id="page-body">
+<div class="page" style="padding:0;display:flex;flex-direction:column;overflow:hidden;">
+  <div class="panel" style="flex:1;display:flex;flex-direction:column;min-height:0;border:none;border-radius:0;">
+    <div class="search-area" id="searchArea">
+      <div class="search-form">
+        <div class="search-item"><label><span class="req">*</span>页面/功能：</label>
+          <select id="pageSel" onchange="onPageChange()">
+            <option value="">请选择页面</option>
+            <option value="成本分析-功能包及采购成本达成" selected>成本分析-功能包及采购成本达成</option>
+            <option value="成本分析-部门达成情况">成本分析-部门达成情况</option>
+            <option value="成本分析-采购成本达成">成本分析-采购成本达成</option>
+            <option value="成本分析-变化履历">成本分析-变化履历</option>
+          </select></div>
+        <div class="search-item"><label>配置方式：</label>
+          <div class="mode-tabs">
+            <div class="mt active" id="modeRole" onclick="switchMode('role')">按角色绑定（推荐）</div>
+            <div class="mt" id="modePerson" onclick="switchMode('person')">按人员例外</div>
+          </div></div>
+        <div class="search-item" id="rolePickerWrap"><label><span class="req">*</span>角色：</label>
+          <select id="roleSel" onchange="initState();renderFields()">
+            <option value="领域经理">领域经理</option>
+            <option value="部门经理">部门经理</option>
+            <option value="使用工程师">使用工程师</option>
+            <option value="成本管理员">成本管理员</option>
+          </select></div>
+        <div class="search-item" id="personPickerWrap" style="display:none;"><label><span class="req">*</span>人员：</label>
+          <select id="personSel" onchange="initState();renderFields()">
+            <option value="liude">刘德（使用工程师）</option>
+            <option value="chenjing">陈静（使用工程师）</option>
+            <option value="sunqian">孙倩（采购员）</option>
+          </select></div>
+        <div class="search-actions">
+          <span class="muted">注：按系统原有分页规则渲染</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="table-toolbar">
+      <div class="preview-bar grow">
+        <div class="flex" style="justify-content:space-between;flex-wrap:wrap;">
+          <div>
+            <b id="scopeText"></b>
+            <div class="muted mt8">判定顺序：<b>人员例外 &gt; 角色模板（多角色从严取并集）&gt; 默认（全可见）</b>；INHERIT 回落到角色模板。命中无权字段在<b>列表/详情/导出/接口四端</b>统一输出 <b>*</b>。</div>
+          </div>
+          <div class="flex">
+            <div class="kpi"><span class="num" id="kpiTotal">0</span><span class="lab">敏感字段数</span></div>
+            <div class="kpi"><span class="num red" id="kpiBlocked">0</span><span class="lab">已屏蔽</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="table-toolbar" style="padding-top:0;">
+      <button class="btn btn-primary" onclick="saveConfig()">保存配置</button>
+      <button class="btn btn-default" onclick="copyFromRole()">从角色模板复制</button>
+      <button class="btn btn-default" onclick="batchBlockSensitive()">全选屏蔽</button>
+      <button class="btn btn-default" onclick="resetAll()">全部放开</button>
+      <div class="right"><span class="muted">批量操作<b>只改页面编辑态</b>，须点【保存配置】才落库</span></div>
+    </div>
+
+    <div class="table-wrap" style="flex:1;overflow:auto;min-height:0;">
+      <table class="list-table">
+        <thead><tr>
+          <th style="width:46px;">序号</th>
+          <th style="min-width:230px;">字段编码</th>
+          <th style="min-width:130px;">字段中文名</th>
+          <th style="width:130px;" id="actionColHead">不可见（屏蔽）</th>
+          <th style="width:130px;">当前生效结果</th>
+        </tr></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+
+    <div class="pagination-bar">
+      <span class="muted">字段清单来自【敏感字段元数据维护】页；列表列/详情/导出/接口共用同一套字段编码与判定。本页<b>不提供「预览效果」</b>。</span>
+    </div>
+  </div>
+</div>
+</template>
+
+<script src="_common/gpm-layout.js"></script>
+<script>
+GpmLayout.init({
+  activePage: 'fieldPermission',
+  breadcrumb: ['首页', '用户权限', '字段权限配置'],
+  tabs: [
+    { key:'home', label:'首页', closable:false },
+    { key:'dataAuthConfig', label:'数据权限配置', page:'03_数据权限配置.html' },
+    { key:'fieldPermission', label:'字段权限配置' }
+  ],
+  activeTab: 'fieldPermission'
+});
+
+/* ================= 敏感字段清单（来自敏感字段元数据维护页，入库即敏感） ================= */
+var PAGE_FIELDS = {
+  '成本分析-功能包及采购成本达成': [
+    { code:'cost:fpAchieve:unitPrice',   name:'单价(成本价)' },
+    { code:'cost:fpAchieve:materialFee', name:'材料费' },
+    { code:'cost:fpAchieve:processFee',  name:'加工费' },
+    { code:'cost:fpAchieve:profitRate',  name:'利润率' },
+    { code:'cost:fpAchieve:targetCost',  name:'目标成本' },
+    { code:'cost:fpAchieve:actualCost',  name:'实际成本' }
+  ],
+  '成本分析-部门达成情况': [
+    { code:'cost:deptAchieve:unitPrice',   name:'单价(成本价)' },
+    { code:'cost:deptAchieve:materialFee', name:'材料费' },
+    { code:'cost:deptAchieve:actualCost',  name:'实际成本' }
+  ],
+  '成本分析-采购成本达成': [
+    { code:'cost:purAchieve:unitPrice',  name:'单价(成本价)' },
+    { code:'cost:purAchieve:profitRate', name:'利润率' },
+    { code:'cost:purAchieve:actualCost', name:'实际成本' }
+  ],
+  '成本分析-变化履历': [
+    { code:'cost:chgHistory:lastPrice',  name:'上次价格' },
+    { code:'cost:chgHistory:curPrice',   name:'本次价格' },
+    { code:'cost:chgHistory:diffAmount', name:'价差金额' }
+  ]
+};
+
+/* 角色模板（默认屏蔽集合） */
+var ROLE_BLOCK = {
+  '领域经理':   [],
+  '部门经理':   [],
+  '使用工程师': ['cost:fpAchieve:unitPrice','cost:fpAchieve:profitRate','cost:fpAchieve:materialFee','cost:fpAchieve:processFee','cost:fpAchieve:targetCost','cost:fpAchieve:actualCost'],
+  '成本管理员': []
+};
+/* 人员例外（三态：INHERIT 跟随角色 / GRANT 放开 / DENY 收紧） */
+var PERSON_EXCEPTION = {
+  'liude':   { 'cost:fpAchieve:unitPrice':'GRANT' },  // 刘德单独放开单价
+  'chenjing':{ 'cost:fpAchieve:profitRate':'DENY' },  // 陈静额外屏蔽利润率
+  'sunqian': {}
+};
+
+var mode = 'role';
+var fieldState = {};
+
+function onPageChange(){ initState(); renderFields(); }
+function switchMode(m){
+  mode = m;
+  document.getElementById('modeRole').className = 'mt'+(m==='role'?' active':'');
+  document.getElementById('modePerson').className = 'mt'+(m==='person'?' active':'');
+  document.getElementById('rolePickerWrap').style.display = m==='role'?'flex':'none';
+  document.getElementById('personPickerWrap').style.display = m==='person'?'flex':'none';
+  document.getElementById('actionColHead').innerText = m==='role'? '不可见（屏蔽）':'例外（放开/收紧）';
+  initState(); renderFields();
+}
+function currentScopeKey(){
+  return mode==='role'? document.getElementById('roleSel').value : document.getElementById('personSel').value;
+}
+function curFieldList(){ return PAGE_FIELDS[document.getElementById('pageSel').value] || []; }
+
+function initState(){
+  var page = document.getElementById('pageSel').value;
+  var list = curFieldList();
+  fieldState = {};
+  var key = currentScopeKey();
+  list.forEach(function(f){
+    if(mode==='role'){
+      fieldState[f.code] = (ROLE_BLOCK[key]||[]).indexOf(f.code)>=0;
+    } else {
+      var ex = (PERSON_EXCEPTION[key]||{})[f.code];
+      if(ex==='GRANT') fieldState[f.code]=false;
+      else if(ex==='DENY') fieldState[f.code]=true;
+      else fieldState[f.code] = (ROLE_BLOCK['使用工程师']||[]).indexOf(f.code)>=0; // INHERIT 回落角色
+    }
+  });
+  var scope = mode==='role'
+    ? '角色：'+document.getElementById('roleSel').value
+    : '人员：'+document.getElementById('personSel').options[document.getElementById('personSel').selectedIndex].text;
+  document.getElementById('scopeText').innerText = (page? '页面：'+page+'　|　' : '（未选择页面）　') + (page? scope : '');
+}
+
+function renderFields(){
+  var tbody=document.getElementById('tbody'); tbody.innerHTML='';
+  var list = curFieldList(), blocked=0;
+  if(!document.getElementById('pageSel').value || !list.length){
+    tbody.innerHTML='<tr><td colspan="5" style="color:#909399;padding:24px;text-align:center;">请先选择页面；若该页面尚未维护字段，请先在【敏感字段元数据维护】维护</td></tr>';
+    document.getElementById('kpiTotal').innerText=0; document.getElementById('kpiBlocked').innerText=0;
+    return;
+  }
+  list.forEach(function(f,i){
+    if(fieldState[f.code]) blocked++;
+    var tr=document.createElement('tr');
+    tr.className='field-row'+(fieldState[f.code]?' blocked':'');
+    var actionCell;
+    if(mode==='role'){
+      actionCell = '<label class="ck"><input type="checkbox" '+(fieldState[f.code]?'checked':'')+' onchange="toggleField(\''+f.code+'\',this)"> 屏蔽</label>';
+    } else {
+      var ex = (PERSON_EXCEPTION[currentScopeKey()]||{})[f.code] || 'INHERIT';
+      actionCell = '<select onchange="toggleException(\''+f.code+'\',this.value)">'+
+        '<option value="INHERIT" '+(ex==='INHERIT'?'selected':'')+'>跟随角色</option>'+
+        '<option value="GRANT" '+(ex==='GRANT'?'selected':'')+'>放开(可见)</option>'+
+        '<option value="DENY" '+(ex==='DENY'?'selected':'')+'>收紧(屏蔽)</option></select>';
+    }
+    var effect = fieldState[f.code]? '<span class="money-mask">* 已屏蔽</span>' : '<span class="tag tag-green">可见</span>';
+    tr.innerHTML =
+      '<td>'+(i+1)+'</td>'+
+      '<td class="text-left" style="font-family:monospace;font-size:12px;">'+f.code+'</td>'+
+      '<td>'+f.name+'</td>'+
+      '<td>'+actionCell+'</td>'+
+      '<td>'+effect+'</td>';
+    tbody.appendChild(tr);
+  });
+  document.getElementById('kpiTotal').innerText=list.length;
+  document.getElementById('kpiBlocked').innerText=blocked;
+}
+function toggleField(code,ck){ fieldState[code]=ck.checked; renderFields(); }
+function toggleException(code,val){
+  if(!PERSON_EXCEPTION[currentScopeKey()]) PERSON_EXCEPTION[currentScopeKey()]={};
+  if(val==='INHERIT') delete PERSON_EXCEPTION[currentScopeKey()][code];
+  else PERSON_EXCEPTION[currentScopeKey()][code]=val;
+  initState(); renderFields();
+}
+function batchBlockSensitive(){
+  if(!confirm('确认将当前页面的全部字段批量置为屏蔽？\n（角色模式＝全部勾选；人员模式＝全部置 DENY）')) return;
+  curFieldList().forEach(function(f){ fieldState[f.code]=true; });
+  renderFields();
+}
+function resetAll(){
+  if(!confirm('确认将当前作用域下所有字段置为可见？\n（角色模式＝取消全部勾选；人员模式＝全部置 GRANT）')) return;
+  curFieldList().forEach(function(f){ fieldState[f.code]=false; });
+  renderFields();
+}
+function copyFromRole(){
+  if(mode==='role'){ alert('「从角色模板复制」仅在【按人员例外】模式下可用。'); return; }
+  var role = '使用工程师';
+  if(!confirm('确认将【'+role+'】的角色模板复制为当前人员的例外基线？\n（覆盖式，将替换当前未保存的编辑态）')) return;
+  initState(); renderFields();
+  alert('已从角色模板复制。请点击【保存配置】落库。');
+}
+function saveConfig(){
+  if(!document.getElementById('pageSel').value){ alert('请先选择页面与作用域'); return; }
+  var blocked = curFieldList().filter(function(f){return fieldState[f.code];}).map(function(f){return f.name;});
+  alert('保存成功！\n作用域：'+document.getElementById('scopeText').innerText+'\n已屏蔽字段：'+(blocked.length? blocked.join('、'):'无')+'\n\n列表/详情/导出/接口将统一按此判定，无权字段输出 *（保存后即时生效）。');
+}
+
+initState(); renderFields();
+</script>
+</body>
+</html>

@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>敏感字段元数据维护 - GPM系统</title>
+<link rel="stylesheet" href="_common/gpm.css">
+</head>
+<body>
+
+<template id="page-body">
+<div class="page" style="padding:0;display:flex;flex-direction:column;overflow:hidden;">
+  <div class="panel" style="flex:1;display:flex;flex-direction:column;min-height:0;border:none;border-radius:0;">
+    <div class="search-area" id="searchArea">
+      <div class="search-form">
+        <div class="search-item"><label>页面：</label>
+          <select id="qPage"><option value="">全部</option><option>成本分析-功能包及采购成本达成</option><option>成本分析-部门达成情况</option><option>成本分析-采购成本达成</option><option>成本分析-变化履历</option></select></div>
+        <div class="search-item"><label>字段编码：</label><input type="text" id="qCode" placeholder="模块:页面:字段"></div>
+        <div class="search-item"><label>字段中文名：</label><input type="text" id="qName" placeholder="请输入中文名"></div>
+        <div class="search-actions">
+          <button class="btn btn-primary" onclick="doSearch()">查询</button>
+          <button class="btn btn-default" onclick="resetSearch()">重置</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="table-toolbar">
+      <button class="btn btn-primary" onclick="openEdit(-1)">新增</button>
+      <button class="btn btn-default" onclick="doImport()">导入</button>
+      <button class="btn btn-default" onclick="doExport()">导出</button>
+      <div class="right"><span class="toolbar-note">共 <b id="totalText">0</b> 个敏感字段</span></div>
+    </div>
+
+    <div class="alert alert-info" style="margin-top:0;">
+      <span class="ico">ⓘ</span>
+      <div>本页仅维护<b>敏感字段库</b>（入库即视为敏感，不再维护「是否敏感」开关，<b>不含「字段分组」列</b>）。字段来源三方式：<b>手工新增 / 研发提供（线下提取后导入）/ 导入</b>；<b>AI 批量提取按钮本期不提供</b>（技术条件不具备）。本页数据作为【字段权限配置】页的<b>唯一底表</b>。</div>
+    </div>
+
+    <div class="alert alert-info" style="margin-top:0;">
+      <span class="ico">ⓘ</span>
+      <div>字段编码规范 <b>模块:页面:字段</b>（如 <b>cost:realTime:unitPrice</b>），<b>全系统唯一</b>，强校验三段式格式，不合规则报错、不允许保存/导入。「页面」取值来自<b>系统页面字典</b>，不允许自由填写；导入出现字典外页面＝<b>整单失败</b>。<br>
+      导入模板列＝<b>页面、字段编码、字段中文名</b>，按字段编码 upsert；文件内编码重复＝<b>整单失败并提示冲突行号</b>；缺关键列＝整单失败。导出文件名 <b>敏感字段元数据-YYYYMMDD.xlsx</b>，按当前筛选条件导出全量（非当前页）。</div>
+    </div>
+
+    <div class="table-wrap" style="flex:1;overflow:auto;min-height:0;">
+      <table class="list-table">
+        <thead><tr>
+          <th style="width:46px;">序号</th>
+          <th style="min-width:200px;">页面</th>
+          <th style="min-width:240px;">字段编码</th>
+          <th style="min-width:130px;">字段中文名</th>
+          <th style="width:140px;">更新时间</th>
+          <th style="width:110px;">操作</th>
+        </tr></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+
+    <div class="pagination-bar">
+      <select onchange="pageSize=parseInt(this.value);renderPage();"><option>15条/页</option><option>30条/页</option><option>50条/页</option></select>
+      <span id="totalText2">共 0 条</span>
+      <div class="flex" style="gap:4px;">
+        <span class="page-btn disabled" id="prevBtn" onclick="gotoPage(curPage-1)">&lt;</span>
+        <span id="pageNums" class="flex" style="gap:4px;"></span>
+        <span class="page-btn" id="nextBtn" onclick="gotoPage(curPage+1)">&gt;</span>
+      </div>
+    </div>
+  </div>
+</div>
+</template>
+
+<!-- 新增/编辑弹窗 -->
+<div class="modal-mask" id="editMask">
+  <div class="modal-wrap" style="width:560px;">
+    <div class="modal-head"><h3 id="editTitle">新增敏感字段</h3><span class="modal-close" onclick="closeEdit()">×</span></div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-item"><label><span class="req">*</span>页面：</label>
+          <div class="field-col">
+            <select id="fPage"><option value="">请选择页面（系统页面字典）</option><option>成本分析-功能包及采购成本达成</option><option>成本分析-部门达成情况</option><option>成本分析-采购成本达成</option><option>成本分析-变化履历</option></select>
+            <div class="err">请选择页面</div>
+          </div>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-item"><label><span class="req">*</span>字段编码：</label>
+          <div class="field-col"><input type="text" id="fCode" placeholder="如 cost:fpAchieve:unitPrice"><div class="err">请输入字段编码</div>
+            <div class="muted">规范：<b>模块:页面:字段</b>（三段式强校验，全系统唯一）；编辑态只读，仅新增时可填</div>
+          </div>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-item"><label><span class="req">*</span>字段中文名：</label>
+          <div class="field-col"><input type="text" id="fName" placeholder="如 单价(成本价)"><div class="err">请输入字段中文名</div>
+            <div class="muted">入库即视为<b>敏感</b>，无需再配「是否敏感」</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-default" onclick="closeEdit()">取消</button>
+      <button class="btn btn-primary" onclick="saveField()">确认</button>
+    </div>
+  </div>
+</div>
+
+<script src="_common/gpm-layout.js"></script>
+<script>
+GpmLayout.init({
+  activePage: 'fieldMetadata',
+  breadcrumb: ['首页', '用户权限', '敏感字段元数据维护'],
+  tabs: [
+    { key:'home', label:'首页', closable:false },
+    { key:'fieldPermission', label:'字段权限配置', page:'04_字段权限配置.html' },
+    { key:'fieldMetadata', label:'敏感字段元数据维护' }
+  ],
+  activeTab: 'fieldMetadata'
+});
+
+var fields = [
+  { page:'成本分析-功能包及采购成本达成', code:'cost:fpAchieve:unitPrice',   name:'单价(成本价)', time:'2026-09-15 10:00' },
+  { page:'成本分析-功能包及采购成本达成', code:'cost:fpAchieve:materialFee', name:'材料费',      time:'2026-09-15 10:00' },
+  { page:'成本分析-功能包及采购成本达成', code:'cost:fpAchieve:processFee',  name:'加工费',      time:'2026-09-15 10:00' },
+  { page:'成本分析-功能包及采购成本达成', code:'cost:fpAchieve:profitRate',  name:'利润率',      time:'2026-09-15 10:00' },
+  { page:'成本分析-功能包及采购成本达成', code:'cost:fpAchieve:targetCost',  name:'目标成本',    time:'2026-09-15 10:00' },
+  { page:'成本分析-功能包及采购成本达成', code:'cost:fpAchieve:actualCost',  name:'实际成本',    time:'2026-09-15 10:00' },
+  { page:'成本分析-部门达成情况',         code:'cost:deptAchieve:unitPrice',   name:'单价(成本价)', time:'2026-09-15 10:05' },
+  { page:'成本分析-部门达成情况',         code:'cost:deptAchieve:materialFee', name:'材料费',      time:'2026-09-15 10:05' },
+  { page:'成本分析-部门达成情况',         code:'cost:deptAchieve:actualCost',  name:'实际成本',    time:'2026-09-15 10:05' },
+  { page:'成本分析-采购成本达成',         code:'cost:purAchieve:unitPrice',    name:'单价(成本价)', time:'2026-09-15 10:10' },
+  { page:'成本分析-采购成本达成',         code:'cost:purAchieve:profitRate',   name:'利润率',      time:'2026-09-15 10:10' },
+  { page:'成本分析-采购成本达成',         code:'cost:purAchieve:actualCost',   name:'实际成本',    time:'2026-09-15 10:10' },
+  { page:'成本分析-变化履历',             code:'cost:chgHistory:lastPrice',    name:'上次价格',    time:'2026-09-15 10:15' },
+  { page:'成本分析-变化履历',             code:'cost:chgHistory:curPrice',     name:'本次价格',    time:'2026-09-15 10:15' },
+  { page:'成本分析-变化履历',             code:'cost:chgHistory:diffAmount',   name:'价差金额',    time:'2026-09-15 10:15' }
+];
+var filtered = fields.slice();
+var curPage=1, pageSize=15, editIdx=-1;
+
+function render(){
+  var tbody=document.getElementById('tbody'); tbody.innerHTML='';
+  var start=(curPage-1)*pageSize, rows=filtered.slice(start,start+pageSize);
+  rows.forEach(function(f,i){
+    var gi=start+i;
+    var tr=document.createElement('tr');
+    tr.innerHTML='<td>'+(gi+1)+'</td>'+
+      '<td class="text-left">'+f.page+'</td>'+
+      '<td class="text-left" style="font-family:monospace;font-size:12px;">'+f.code+'</td>'+
+      '<td>'+f.name+'</td>'+
+      '<td>'+f.time+'</td>'+
+      '<td><span class="op-link" onclick="openEdit('+gi+')">编辑</span><span class="op-link danger" onclick="delField('+gi+')">删除</span></td>';
+    tbody.appendChild(tr);
+  });
+  document.getElementById('totalText').innerText=filtered.length;
+  document.getElementById('totalText2').innerText='共 '+filtered.length+' 条';
+  renderPage();
+}
+function renderPage(){
+  var pages=Math.max(1,Math.ceil(filtered.length/pageSize)); if(curPage>pages)curPage=pages;
+  var nums=document.getElementById('pageNums'); nums.innerHTML='';
+  for(var p=1;p<=pages&&p<=7;p++){var b=document.createElement('span');b.className='page-btn'+(p===curPage?' active':'');b.innerText=p;b.onclick=(function(pp){return function(){gotoPage(pp);};})(p);nums.appendChild(b);}
+  document.getElementById('prevBtn').className='page-btn'+(curPage<=1?' disabled':'');
+  document.getElementById('nextBtn').className='page-btn'+(curPage>=pages?' disabled':'');
+}
+function gotoPage(p){var pages=Math.max(1,Math.ceil(filtered.length/pageSize));if(p<1)p=1;if(p>pages)p=pages;curPage=p;render();}
+
+function doSearch(){
+  var pg=qPage.value,c=qCode.value.trim(),n=qName.value.trim();
+  filtered=fields.filter(function(f){
+    if(pg && f.page!==pg)return false;
+    if(c && f.code.indexOf(c)<0)return false;
+    if(n && f.name.indexOf(n)<0)return false;
+    return true;
+  });
+  curPage=1; render();
+}
+function resetSearch(){qPage.value='';qCode.value='';qName.value='';filtered=fields.slice();curPage=1;render();}
+
+/* 字段编码强校验：模块:页面:字段 三段式 */
+function isValidCode(c){ return /^[A-Za-z0-9_]+:[A-Za-z0-9_]+:[A-Za-z0-9_]+$/.test(c); }
+
+function openEdit(gi){
+  editIdx=gi;
+  document.getElementById('editTitle').innerText = gi<0?'新增敏感字段':'编辑敏感字段';
+  var f = gi<0? {page:'',code:'',name:''} : filtered[gi];
+  fPage.value=f.page; fCode.value=f.code; fCode.readOnly = gi>=0;
+  fName.value=f.name;
+  clearErr();
+  document.getElementById('editMask').classList.add('show');
+}
+function clearErr(){document.querySelectorAll('#editMask .form-item').forEach(function(x){x.classList.remove('error');});}
+function saveField(){
+  var ok=true;
+  function mark(id,cond){document.getElementById(id).closest('.form-item').classList.toggle('error',!cond);if(!cond)ok=false;}
+  mark('fPage',!!fPage.value); mark('fCode',!!fCode.value.trim()); mark('fName',!!fName.value.trim());
+  if(!ok)return;
+  var code=fCode.value.trim();
+  /* 强校验：编码格式 */
+  if(!isValidCode(code)){ alert('字段编码格式错误：'+code+'\n应为「模块:页面:字段」三段式（如 cost:realTime:unitPrice）'); return; }
+  var obj={page:fPage.value,code:code,name:fName.value.trim(),time:now()};
+  if(editIdx<0){
+    if(fields.some(function(x){return x.code===obj.code;})){alert('字段编码已存在：'+obj.code);return;}
+    fields.unshift(obj);
+  } else { Object.assign(filtered[editIdx],obj); }
+  closeEdit(); doSearch(); alert(editIdx<0?'新增成功！':'保存成功！');
+}
+function now(){var d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')+' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');}
+function closeEdit(){document.getElementById('editMask').classList.remove('show');}
+function delField(gi){ if(confirm('确认删除该敏感字段吗？\n删除后【字段权限配置】中引用该编码的屏蔽记录将失效。')){var f=filtered[gi];var idx=fields.indexOf(f);if(idx>-1)fields.splice(idx,1);doSearch();} }
+
+function doImport(){ alert('导入敏感字段元数据\n模板列：页面｜字段编码｜字段中文名（按字段编码 upsert）\n\n校验：\n· 页面须为系统页面字典内页面，否则整单失败\n· 字段编码须符合「模块:页面:字段」，否则整单失败\n· 文件内编码重复＝整单失败并提示冲突行号\n· 缺关键列（字段编码）＝整单失败'); }
+function doExport(){ alert('已导出 敏感字段元数据.xlsx（'+filtered.length+' 条）\n按当前筛选条件导出全部命中数据，不受分页影响。'); }
+
+render();
+</script>
+</body>
+</html>

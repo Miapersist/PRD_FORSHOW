@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>统一统筹页 - GPM系统</title>
+<link rel="stylesheet" href="_common/gpm.css">
+<style>
+  .obj-tags .tag{margin:1px 2px;}
+  .src-readonly{color:#909399;}
+  .pick-list{border:1px solid #e5e6eb;border-radius:4px;max-height:300px;overflow:auto;padding:6px;}
+  .pick-item{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:3px;font-size:13px;}
+  .pick-item:hover{background:#f5f7fa;}
+  .pick-item .code{color:#909399;font-size:12px;font-family:monospace;}
+</style>
+</head>
+<body>
+
+<template id="page-body">
+<div class="page" style="padding:0;display:flex;flex-direction:column;overflow:hidden;">
+  <div class="panel" style="flex:1;display:flex;flex-direction:column;min-height:0;border:none;border-radius:0;">
+    <!-- 页内 Tab -->
+    <div class="inner-tabs">
+      <div class="tab-btn active" data-tab="car" onclick="switchTab('car',this)">车型<span class="muted">（人员↔车型）</span></div>
+      <div class="tab-btn" data-tab="brand" onclick="switchTab('brand',this)">品牌&海内外<span class="muted">（人员↔品牌×海内外）</span></div>
+      <div class="tab-btn" data-tab="domainBuy" onclick="switchTab('domainBuy',this)">领域（采购）<span class="new-col-badge">新</span></div>
+    </div>
+
+    <div class="alert alert-info" style="margin:12px 16px 0;">
+      <span class="ico">ⓘ</span>
+      <div>本页集中维护「<b>人员 ↔ 可见对象</b>」范围，性质为<b>「补位」</b>——能读权威来源的读来源、给已有来源做人工补充、无来源的人工维护，<b>不与来源页双份维护</b>。数据来源分两类：<b>上游同步（只读）</b>与<b>人工新增/导入（可编辑）</b>。<b>组织架构不在本页配置</b>——由 IAM 下发，承载于【用户权限】页；<b>不设「零件号」Tab</b>（与零件认领重复）。</div>
+    </div>
+
+    <div class="search-area" id="searchArea">
+      <div class="search-form">
+        <div class="search-item"><label>人员账号/姓名：</label><input type="text" id="qUser" placeholder="账号或姓名"></div>
+        <div class="search-item" id="qObjWrap"><label id="qObjLabel">可见对象：</label><input type="text" id="qObj" placeholder="输入对象关键词"></div>
+        <div class="search-item"><label>数据来源：</label>
+          <select id="qSrc"><option value="">全部</option><option>上游同步</option><option>人工新增/导入</option></select></div>
+        <div class="search-actions">
+          <button class="btn btn-primary" onclick="doSearch()">查询</button>
+          <button class="btn btn-default" onclick="resetSearch()">重置</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="table-toolbar">
+      <button class="btn btn-primary" onclick="openEdit(-1)">新增</button>
+      <button class="btn btn-default" onclick="tip('导入人员-对象关系.xlsx')">导入</button>
+      <button class="btn btn-default" onclick="doExport()">导出</button>
+      <div class="right"><span class="toolbar-note">共 <b id="totalText">0</b> 条</span></div>
+    </div>
+
+    <div class="table-wrap" style="flex:1;overflow:auto;min-height:0;">
+      <table class="list-table">
+        <thead><tr>
+          <th style="width:46px;">序号</th>
+          <th style="min-width:100px;">人员账号</th>
+          <th style="width:90px;">姓名</th>
+          <th style="min-width:110px;">所属角色</th>
+          <th style="min-width:280px;" id="objColHead">可见对象集合</th>
+          <th style="width:130px;">数据来源</th>
+          <th style="width:110px;">生效时间</th>
+          <th style="width:110px;">操作</th>
+        </tr></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+
+    <div class="pagination-bar">
+      <select onchange="pageSize=parseInt(this.value);renderPage();"><option>15条/页</option><option>30条/页</option></select>
+      <span id="totalText2">共 0 条</span>
+      <div class="flex" style="gap:4px;">
+        <span class="page-btn disabled" id="prevBtn" onclick="gotoPage(curPage-1)">&lt;</span>
+        <span id="pageNums" class="flex" style="gap:4px;"></span>
+        <span class="page-btn" id="nextBtn" onclick="gotoPage(curPage+1)">&gt;</span>
+      </div>
+    </div>
+  </div>
+</div>
+</template>
+
+<!-- 新增/编辑弹窗 -->
+<div class="modal-mask" id="editMask">
+  <div class="modal-wrap" style="width:680px;">
+    <div class="modal-head"><h3 id="editTitle">新增可见范围</h3><span class="modal-close" onclick="closeEdit()">×</span></div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-item"><label><span class="req">*</span>人员账号：</label>
+          <div class="field-col">
+            <select id="fUser" onchange="onPickUser()"><option value="">请选择人员</option><option value="zhangsw|张少伟|成本管理员">zhangsw 张少伟</option><option value="liude|刘德|使用工程师">liude 刘德</option><option value="chenjing|陈静|使用工程师">chenjing 陈静</option><option value="sunqian|孙倩|采购员">sunqian 孙倩</option><option value="fenghua|冯华|使用工程师">fenghua 冯华</option></select>
+            <div class="err">请选择人员</div>
+          </div>
+        </div>
+        <div class="form-item"><label>所属角色：</label><input type="text" id="fRole" readonly placeholder="选择人员后自动带出"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-item" style="flex:1;"><label><span class="req">*</span><span id="fObjLabel">可见对象：</span></label>
+          <div class="field-col" style="flex:1;">
+            <div class="flex-gap">
+              <input type="text" id="fObjSearch" placeholder="搜索对象（支持模糊）" style="flex:1;" oninput="renderPickList()">
+              <button class="btn btn-primary btn-sm" onclick="openPick()">选择对象…</button>
+            </div>
+            <div id="objTags" class="obj-tags mt8"></div>
+            <div class="err" id="objErr">请至少选择一个对象</div>
+            <div class="muted mt8">可见对象通过<b>多选弹窗</b>选择，<b>不支持自由输入</b>；已选项以标签展示，可增删。</div>
+          </div>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-item"><label>数据来源：</label><input type="text" value="人工新增/导入" readonly></div>
+        <div class="form-item"><label>生效时间：</label><input type="date" id="fStart"></div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-default" onclick="closeEdit()">取消</button>
+      <button class="btn btn-primary" onclick="saveScope()">确认</button>
+    </div>
+  </div>
+</div>
+
+<!-- 可见对象 多选弹窗 -->
+<div class="modal-mask" id="pickMask">
+  <div class="modal-wrap" style="width:520px;">
+    <div class="modal-head"><h3 id="pickTitle">选择可见对象</h3><span class="modal-close" onclick="closePick()">×</span></div>
+    <div class="modal-body">
+      <input type="text" id="pickSearch" placeholder="搜索（支持编码/名称模糊）" style="width:100%;height:32px;border:1px solid #dcdfe6;border-radius:4px;padding:0 10px;margin-bottom:8px;box-sizing:border-box;" oninput="renderPickList()">
+      <div class="pick-list" id="pickList"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-default" onclick="closePick()">取消</button>
+      <button class="btn btn-primary" onclick="confirmPick()">确定</button>
+    </div>
+  </div>
+</div>
+
+<script src="_common/gpm-layout.js"></script>
+<script>
+GpmLayout.init({
+  activePage: 'unifiedScope',
+  breadcrumb: ['首页', '用户权限', '统一统筹页'],
+  tabs: [
+    { key:'home', label:'首页', closable:false },
+    { key:'userAccess', label:'用户权限', page:'01_用户权限.html' },
+    { key:'unifiedScope', label:'统一统筹页' }
+  ],
+  activeTab: 'unifiedScope'
+});
+
+/* 三个 Tab 的对象字典（已取消「零件号」Tab） */
+var TAB_CONF = {
+  car:       { objLabel:'可见车型：',       colHead:'可见车型集合',         dict:[
+                 {code:'AIONY',   name:'AION Y'}, {code:'AIONSPLUS', name:'AION S Plus'},
+                 {code:'HBTGT',   name:'昊铂GT'}, {code:'TRM8',     name:'传祺M8'},
+                 {code:'TRGS8',   name:'传祺GS8'}, {code:'YB',      name:'影豹'}, {code:'AIONV', name:'AION V'}],
+               tagCls:'tag-blue', pickTitle:'选择可见车型（来源：车型项目管理·车型项目基础信息列表）' },
+  brand:     { objLabel:'品牌×海内外：',     colHead:'可见品牌×海内外组合',   dict:[
+                 {code:'TR-DOM', name:'传祺-国内'}, {code:'TR-OVS', name:'传祺-海外'},
+                 {code:'AN-DOM', name:'埃安-国内'}, {code:'AN-OVS', name:'埃安-海外'},
+                 {code:'QJ-DOM', name:'启境-国内'}, {code:'QJ-OVS', name:'启境-海外'},
+                 {code:'HB-DOM', name:'昊铂-国内'}, {code:'HB-OVS', name:'昊铂-海外'}],
+               tagCls:'tag-green', pickTitle:'选择品牌×海内外（来源：字典 BRAND_HOME_ABROAD，固定 8 项）' },
+  domainBuy: { objLabel:'领域（采购）：',     colHead:'可见领域（采购）集合', dict:[
+                 {code:'NWS',  name:'内外饰'}, {code:'CS',  name:'车身'}, {code:'DP',  name:'底盘'},
+                 {code:'ZL',   name:'智联'},   {code:'JCAQ',name:'集成安全'}, {code:'GY',  name:'工艺'},
+                 {code:'DLJC', name:'动力集成'}, {code:'DLBU',name:'动力BU'}, {code:'ZC',  name:'座舱'},
+                 {code:'CPSJ', name:'产品数据'}, {code:'SH',  name:'售后'}],
+               tagCls:'tag-orange', pickTitle:'选择领域（采购）（原字典 DOMAIN_PERMISSION_MAPPING 作废，本页统一维护）' }
+};
+var curTab = 'car';
+
+/* Mock：按 Tab 组织的人员-对象数据 */
+var data = {
+  car: [
+    { acc:'zhangsw', name:'张少伟', role:'成本管理员', objs:['AION Y','传祺M8'], src:'上游同步', time:'2026-08-01', readonly:true },
+    { acc:'liude',   name:'刘德',   role:'使用工程师', objs:['AION Y'], src:'上游同步', time:'2026-08-01', readonly:true },
+    { acc:'chenjing',name:'陈静',   role:'使用工程师', objs:['AION S Plus','昊铂GT'], src:'人工新增/导入', time:'2026-08-12', readonly:false },
+    { acc:'fenghua', name:'冯华',   role:'使用工程师', objs:['昊铂GT'], src:'人工新增/导入', time:'2026-08-15', readonly:false }
+  ],
+  brand: [
+    { acc:'zhangsw', name:'张少伟', role:'成本管理员', objs:['传祺-国内','埃安-国内'], src:'人工新增/导入', time:'2026-08-05', readonly:false },
+    { acc:'wanghf',  name:'王慧芬', role:'成本经理',   objs:['传祺-国内','传祺-海外','埃安-国内','埃安-海外'], src:'人工新增/导入', time:'2026-08-01', readonly:false }
+  ],
+  domainBuy: [
+    { acc:'wanghf',  name:'王慧芬', role:'成本经理',   objs:['内外饰','车身'], src:'人工新增/导入', time:'2026-09-15', readonly:false },
+    { acc:'chenjing',name:'陈静',   role:'使用工程师', objs:['内外饰'],        src:'人工新增/导入', time:'2026-09-15', readonly:false }
+  ]
+};
+var filtered = [];
+var curPage=1, pageSize=15, editIdx=-1;
+var tempObjs = [];
+var pickState = {};
+
+function switchTab(tab, el){
+  curTab = tab;
+  document.querySelectorAll('.inner-tabs .tab-btn').forEach(function(b){ b.classList.toggle('active', b.dataset.tab===tab); });
+  var conf = TAB_CONF[tab];
+  document.getElementById('qObjLabel').innerText = conf.objLabel;
+  document.getElementById('objColHead').innerText = conf.colHead;
+  document.getElementById('fObjLabel').innerText = conf.objLabel;
+  curPage=1; doSearch();
+}
+function srcTag(s, readonly){
+  return readonly? '<span class="tag tag-gray">上游同步(只读)</span>' : '<span class="tag tag-blue">人工新增/导入</span>';
+}
+function objName(code){
+  var d = TAB_CONF[curTab].dict.filter(function(x){return x.code===code;})[0];
+  return d? d.name : code;
+}
+function render(){
+  var tbody=document.getElementById('tbody'); tbody.innerHTML='';
+  var conf=TAB_CONF[curTab];
+  var start=(curPage-1)*pageSize, rows=filtered.slice(start,start+pageSize);
+  rows.forEach(function(r,i){
+    var gi=start+i;
+    var tr=document.createElement('tr');
+    var objHtml = r.objs.map(function(o){return '<span class="tag '+conf.tagCls+'">'+objName(o)+'</span>';}).join('');
+    var ops = r.readonly
+      ? '<span class="muted">只读</span>'
+      : '<span class="op-link" onclick="openEdit('+gi+')">编辑</span><span class="op-link danger" onclick="delScope('+gi+')">删除</span>';
+    tr.innerHTML='<td>'+(gi+1)+'</td>'+
+      '<td>'+r.acc+'</td>'+
+      '<td>'+r.name+'</td>'+
+      '<td>'+r.role+'</td>'+
+      '<td class="text-left obj-tags">'+objHtml+'</td>'+
+      '<td>'+srcTag(r.src, r.readonly)+'</td>'+
+      '<td>'+r.time+'</td>'+
+      '<td>'+ops+'</td>';
+    tbody.appendChild(tr);
+  });
+  if(!rows.length) tbody.innerHTML='<tr><td colspan="8" style="color:#909399;padding:24px;text-align:center;">暂无数据</td></tr>';
+  document.getElementById('totalText').innerText=filtered.length;
+  document.getElementById('totalText2').innerText='共 '+filtered.length+' 条';
+  renderPage();
+}
+function renderPage(){
+  var pages=Math.max(1,Math.ceil(filtered.length/pageSize)); if(curPage>pages)curPage=pages;
+  var nums=document.getElementById('pageNums'); nums.innerHTML='';
+  for(var p=1;p<=pages&&p<=7;p++){var b=document.createElement('span');b.className='page-btn'+(p===curPage?' active':'');b.innerText=p;b.onclick=(function(pp){return function(){gotoPage(pp);};})(p);nums.appendChild(b);}
+  document.getElementById('prevBtn').className='page-btn'+(curPage<=1?' disabled':'');
+  document.getElementById('nextBtn').className='page-btn'+(curPage>=pages?' disabled':'');
+}
+function gotoPage(p){var pages=Math.max(1,Math.ceil(filtered.length/pageSize));if(p<1)p=1;if(p>pages)p=pages;curPage=p;render();}
+
+function doSearch(){
+  var u=qUser.value.trim(), o=qObj.value.trim(), s=qSrc.value;
+  var list = data[curTab]||[];
+  filtered = list.filter(function(r){
+    if(u && r.acc.indexOf(u)<0 && r.name.indexOf(u)<0)return false;
+    if(o && !r.objs.some(function(x){return objName(x).indexOf(o)>=0 || x.indexOf(o)>=0;}))return false;
+    if(s && r.src!==s)return false;
+    return true;
+  });
+  render();
+}
+function resetSearch(){qUser.value='';qObj.value='';qSrc.value='';doSearch();}
+function tip(m){alert(m);}
+
+/* ================= 编辑 ================= */
+function onPickUser(){
+  var v=document.getElementById('fUser').value;
+  document.getElementById('fRole').value = v? v.split('|')[2]||'' : '';
+}
+function openEdit(gi){
+  editIdx=gi;
+  document.getElementById('editTitle').innerText = gi<0?('新增可见范围（'+TAB_CONF[curTab].colHead+'）'):'编辑可见范围';
+  tempObjs=[];
+  if(gi>=0){
+    var r=filtered[gi];
+    document.getElementById('fUser').value = r.acc+'|'+r.name+'|'+r.role;
+    document.getElementById('fRole').value = r.role;
+    tempObjs=r.objs.slice();
+    document.getElementById('fStart').value=r.time;
+  } else {
+    document.getElementById('fUser').value=''; document.getElementById('fRole').value='';
+    document.getElementById('fStart').value=today();
+  }
+  document.getElementById('fObjSearch').value='';
+  renderTempObjs(); clearErr();
+  document.getElementById('editMask').classList.add('show');
+}
+function today(){var d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function renderTempObjs(){
+  var conf=TAB_CONF[curTab];
+  var box=document.getElementById('objTags'); box.innerHTML='';
+  tempObjs.forEach(function(o,i){
+    var t=document.createElement('span'); t.className='tag '+conf.tagCls;
+    t.innerHTML=objName(o)+' <span style="cursor:pointer;" onclick="tempObjs.splice('+i+',1);renderTempObjs()">×</span>';
+    box.appendChild(t);
+  });
+  if(!tempObjs.length) box.innerHTML='<span class="muted">尚未选择对象</span>';
+}
+function clearErr(){document.querySelectorAll('#editMask .form-item').forEach(function(x){x.classList.remove('error');});document.getElementById('objErr').style.display='none';}
+
+/* ---- 多选弹窗 ---- */
+function openPick(){
+  pickState={};
+  tempObjs.forEach(function(o){ pickState[o]=true; });
+  document.getElementById('pickTitle').innerText = TAB_CONF[curTab].pickTitle;
+  document.getElementById('pickSearch').value='';
+  renderPickList();
+  document.getElementById('pickMask').classList.add('show');
+}
+function closePick(){ document.getElementById('pickMask').classList.remove('show'); }
+function renderPickList(){
+  var kw=(document.getElementById('pickSearch').value||'').trim();
+  var listEl=document.getElementById('pickList'); listEl.innerHTML='';
+  TAB_CONF[curTab].dict.filter(function(d){
+    return !kw || d.name.indexOf(kw)>=0 || d.code.toLowerCase().indexOf(kw.toLowerCase())>=0;
+  }).forEach(function(d){
+    var row=document.createElement('label'); row.className='pick-item';
+    row.innerHTML='<input type="checkbox" '+(pickState[d.code]?'checked':'')+' onchange="pickState[\''+d.code+'\']=this.checked"> '+
+      '<span>'+d.name+'</span><span class="code">'+d.code+'</span>';
+    listEl.appendChild(row);
+  });
+  if(!listEl.innerHTML) listEl.innerHTML='<div class="muted" style="padding:12px;">未匹配到对象</div>';
+}
+function confirmPick(){
+  tempObjs = Object.keys(pickState).filter(function(k){ return pickState[k]; });
+  renderTempObjs(); closePick();
+}
+
+function saveScope(){
+  var ok=true;
+  if(!document.getElementById('fUser').value){
+    // 如果人员为空但已有角色/已选，给出提示
+    document.getElementById('fUser').closest('.form-item').classList.add('error');ok=false;
+  }
+  if(!tempObjs.length){document.getElementById('objErr').style.display='block';ok=false;}
+  if(!ok)return;
+  var parts=document.getElementById('fUser').value.split('|');
+  var acc=parts[0], name=parts[1]||'', role=parts[2]||'—';
+  // 去重：同一人员+同一对象不重复添加
+  var dup = (data[curTab]||[]).some(function(r){ return r.acc===acc && editIdx<0; });
+  var obj={acc:acc,name:name,role:role,objs:tempObjs.slice(),src:'人工新增/导入',time:document.getElementById('fStart').value||today(),readonly:false};
+  if(editIdx<0){ data[curTab].unshift(obj); } else { Object.assign(filtered[editIdx],obj); }
+  closeEdit(); doSearch(); alert(editIdx<0?'新增成功！':'保存成功！');
+}
+function closeEdit(){document.getElementById('editMask').classList.remove('show');}
+function delScope(gi){
+  var r=filtered[gi];
+  if(r.readonly){ alert('上游同步数据不可删除'); return; }
+  if(confirm('确认删除 '+r.name+' 的该条可见范围吗？')){ var idx=data[curTab].indexOf(r); if(idx>-1)data[curTab].splice(idx,1); doSearch(); }
+}
+function doExport(){ alert('已导出 统一统筹-'+TAB_CONF[curTab].colHead+'-YYYYMMDD.xlsx\n范围：'+filtered.length+' 条（按当前筛选条件导出全部命中数据，非当前页）'); }
+
+doSearch();
+</script>
+</body>
+</html>

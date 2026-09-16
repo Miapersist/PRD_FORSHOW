@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>成本分析报表 - GPM系统</title>
+<link rel="stylesheet" href="_common/gpm.css">
+<style>
+  .demo-role-bar{background:#fff7e6;border:1px solid #ffe7ba;border-radius:4px;padding:8px 14px;margin:12px 16px 0;font-size:13px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+  .money-mask{color:#909399;font-family:monospace;letter-spacing:1px;}
+  td.money{text-align:right;padding-right:14px;font-family:monospace;}
+  .ver-lock{background:#f5f7fa;border:1px solid #e5e6eb;border-radius:4px;padding:5px 12px;font-size:13px;color:#606266;}
+  .ver-lock b{color:#1869e1;}
+</style>
+</head>
+<body>
+
+<template id="page-body">
+<div class="page" style="padding:0;display:flex;flex-direction:column;overflow:hidden;">
+  <div class="panel" style="flex:1;display:flex;flex-direction:column;min-height:0;border:none;border-radius:0;">
+
+    <!-- 演示：切换当前登录角色 -->
+    <div class="demo-role-bar">
+      <b>演示：以不同角色查看本报表</b>
+      <select id="demoRole" onchange="applyRole()">
+        <option value="domainManager">领域经理（按领域：内外饰）</option>
+        <option value="deptManager">部门经理（按部门：车身开发部）</option>
+        <option value="useEngineer">使用工程师（按功能包：责任工程师＝本人）</option>
+      </select>
+      <span class="muted">切换后演示「数据范围（按报表领域/部门/功能包列过滤）＋字段权限脱敏」效果</span>
+    </div>
+
+    <div class="search-area" id="searchArea">
+      <div class="search-form">
+        <div class="search-item"><label>项目代号：</label><input type="text" id="qProj" placeholder="请输入项目代号"></div>
+        <div class="search-item"><label>车型：</label><input type="text" id="qModel" placeholder="请输入车型"></div>
+        <div class="search-item"><label>领域：</label>
+          <select id="qDomain"><option value="">全部</option><option>内外饰</option><option>车身</option><option>底盘</option><option>智联</option></select></div>
+        <div class="search-item"><label>部门：</label>
+          <select id="qDept"><option value="">全部</option><option>车身开发部</option><option>架构开发部</option><option>智能座舱产品线</option></select></div>
+        <div class="search-item"><label>功能包：</label><input type="text" id="qFp" placeholder="请输入功能包"></div>
+        <div class="search-item"><label>数据版本：</label>
+          <span class="ver-lock">仅发布（<b>实时数据不对外可见</b>）</span></div>
+        <div class="search-actions">
+          <button class="btn btn-primary" onclick="doSearch()">查询</button>
+          <button class="btn btn-default" onclick="resetSearch()">重置</button>
+          <button class="btn btn-default" onclick="doExport()">导出</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="alert alert-info" style="margin:12px 16px 0;" id="verAlert">
+      <span class="ico">ⓘ</span>
+      <div id="verAlertText"></div>
+    </div>
+
+    <div class="table-wrap" style="flex:1;overflow:auto;min-height:0;">
+      <table class="list-table">
+        <thead><tr>
+          <th style="width:46px;">序号</th>
+          <th style="min-width:110px;">项目代号</th>
+          <th style="min-width:100px;">车型</th>
+          <th style="width:90px;">品牌</th>
+          <th style="min-width:90px;">领域</th>
+          <th style="min-width:100px;">部门</th>
+          <th style="min-width:120px;">功能包</th>
+          <th style="min-width:130px;">零件名称</th>
+          <th style="width:100px;">责任工程师</th>
+          <th style="width:110px;">单价(成本价)</th>
+          <th style="width:110px;">材料费</th>
+          <th style="width:110px;">加工费</th>
+          <th style="width:100px;">利润率</th>
+          <th style="width:110px;">目标成本</th>
+          <th style="width:110px;">实际成本</th>
+          <th style="width:90px;">达成率</th>
+        </tr></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+
+    <div class="pagination-bar">
+      <select><option>15条/页</option><option>30条/页</option></select>
+      <span id="totalText">共 0 条</span>
+      <span class="muted">数据范围按报表「领域/部门/功能包/责任工程师」列过滤（代码写死）；无权字段以 * 显示，导出同样脱敏。</span>
+    </div>
+  </div>
+</div>
+</template>
+
+<script src="_common/gpm-layout.js"></script>
+<script>
+GpmLayout.init({
+  activePage: 'costReport',
+  breadcrumb: ['首页', '业务模块', '成本分析报表'],
+  tabs: [
+    { key:'home', label:'首页', closable:false },
+    { key:'costReport', label:'成本分析报表' }
+  ],
+  activeTab: 'costReport'
+});
+
+/* ================= 角色权限模型（与数据权限/字段权限配置联动） =================
+ * 数据范围：领域（成本）/部门/功能包/责任工程师 均「代码写死」，直接取报表对应列过滤。
+ * 字段权限：命中屏蔽字段则输出 *（列表/详情/导出/接口四端一致）。
+ */
+var ROLE_PERM = {
+  domainManager: { scope:'domain',  domain:'内外饰', maskMoney:false, maskFields:[],
+                   label:'领域经理（按领域：内外饰）' },
+  deptManager:   { scope:'dept',    dept:'车身开发部', maskMoney:false, maskFields:[],
+                   label:'部门经理（按部门：车身开发部）' },
+  useEngineer:   { scope:'engineer', eng:'刘德', maskMoney:true,
+                   maskFields:['unitPrice','materialFee','processFee','profitRate','targetCost','actualCost'],
+                   label:'使用工程师（按功能包：责任工程师＝本人 / 金额脱敏）' }
+};
+var curRole = 'domainManager';
+
+/* ================= Mock 报表数据（均为已发布数据） ================= */
+var DATA = [
+  { proj:'PRJ-AY2025',  model:'AION Y',       brand:'埃安', domain:'内外饰', dept:'车身开发部',     fp:'内饰包',   part:'前门内饰板',   eng:'刘德', unitPrice:126.00, materialFee:60.80, processFee:17.60, profitRate:'8.2%', targetCost:120.00, actualCost:126.00, achieve:'95.2%' },
+  { proj:'PRJ-AY2025',  model:'AION Y',       brand:'埃安', domain:'内外饰', dept:'车身开发部',     fp:'内饰包',   part:'后门内饰板',   eng:'刘德', unitPrice:113.50, materialFee:57.20, processFee:16.00, profitRate:'7.5%', targetCost:110.00, actualCost:113.50, achieve:'96.9%' },
+  { proj:'PRJ-AY2025',  model:'AION Y',       brand:'埃安', domain:'内外饰', dept:'车身开发部',     fp:'仪表包',   part:'仪表板总成',   eng:'陈静', unitPrice:338.00, materialFee:195.00, processFee:51.00, profitRate:'9.0%', targetCost:330.00, actualCost:338.00, achieve:'97.6%' },
+  { proj:'PRJ-M8-2024', model:'传祺M8',       brand:'传祺', domain:'车身',   dept:'车身开发部',     fp:'车身覆盖件', part:'侧滑门总成', eng:'冯华', unitPrice:480.00, materialFee:264.00, processFee:77.00, profitRate:'9.8%', targetCost:470.00, actualCost:480.00, achieve:'97.9%' },
+  { proj:'PRJ-HGT-2026',model:'昊铂GT',       brand:'昊铂', domain:'底盘',   dept:'架构开发部',     fp:'底盘结构件', part:'激光雷达支架', eng:'赵磊', unitPrice:96.80,  materialFee:45.20, processFee:12.80, profitRate:'6.9%', targetCost:92.00,  actualCost:96.80,  achieve:'95.0%' },
+  { proj:'PRJ-AS2026',  model:'AION S Plus',  brand:'埃安', domain:'座舱',   dept:'智能座舱产品线', fp:'智能座舱包', part:'中控面板',    eng:'吴刚', unitPrice:210.00, materialFee:118.00, processFee:32.00, profitRate:'8.8%', targetCost:205.00, actualCost:210.00, achieve:'97.6%' }
+];
+var filtered = [];
+
+/* 金额字段 key -> 列名映射 */
+var MONEY_KEYS = ['unitPrice','materialFee','processFee','profitRate','targetCost','actualCost'];
+
+function applyRole(){
+  curRole = document.getElementById('demoRole').value;
+  updateVerAlert();
+  doSearch();
+}
+function updateVerAlert(){
+  var perm = ROLE_PERM[curRole];
+  var t = document.getElementById('verAlertText');
+  var scopeTip = '';
+  if(perm.scope==='domain'){
+    scopeTip = '数据范围：按<b>领域</b>过滤，仅可见「领域＝'+perm.domain+'」的数据（领域列写死匹配）。';
+  } else if(perm.scope==='dept'){
+    scopeTip = '数据范围：按<b>部门</b>过滤，仅可见「部门＝'+perm.dept+'」的数据（部门列写死匹配）。';
+  } else {
+    scopeTip = '数据范围：按<b>功能包</b>过滤，仅可见「责任工程师＝'+perm.eng+'」名下的功能包数据（责任工程师列写死匹配）。';
+  }
+  var maskTip = perm.maskMoney
+    ? '　字段权限：金额类敏感字段已<b>脱敏（*）</b>。'
+    : '　字段权限：金额字段<b>可见</b>。';
+  t.innerHTML = '<b>当前：'+perm.label+'</b>　|　数据版本：<b>仅发布</b>（实时数据不对外可见）。'+scopeTip+maskTip;
+}
+
+/* 数据范围过滤（代码写死，取报表列） */
+function inScope(r){
+  var perm = ROLE_PERM[curRole];
+  if(perm.scope==='domain')   return r.domain === perm.domain;
+  if(perm.scope==='dept')     return r.dept   === perm.dept;
+  if(perm.scope==='engineer') return r.eng    === perm.eng;
+  return true;
+}
+
+function fmt(v, key){
+  var perm = ROLE_PERM[curRole];
+  if(perm.maskMoney && perm.maskFields.indexOf(key)>=0){
+    return '<span class="money-mask">*</span>';
+  }
+  return (typeof v==='number')? v.toFixed(2) : v;
+}
+
+function doSearch(){
+  var pj=qProj.value.trim(), m=qModel.value.trim(), dm=qDomain.value, dp=qDept.value, fp=qFp.value.trim();
+  filtered = DATA.filter(function(r){
+    if(!inScope(r)) return false;              // 数据范围（写死）
+    if(pj && r.proj.indexOf(pj)<0) return false;
+    if(m  && r.model.indexOf(m)<0)  return false;
+    if(dm && r.domain!==dm) return false;
+    if(dp && r.dept!==dp)   return false;
+    if(fp && r.fp.indexOf(fp)<0) return false;
+    return true;
+  });
+  render();
+}
+function resetSearch(){qProj.value='';qModel.value='';qDomain.value='';qDept.value='';qFp.value='';doSearch();}
+
+function render(){
+  var tbody=document.getElementById('tbody'); tbody.innerHTML='';
+  filtered.forEach(function(r,i){
+    var tr=document.createElement('tr');
+    tr.innerHTML='<td>'+(i+1)+'</td>'+
+      '<td>'+r.proj+'</td>'+
+      '<td>'+r.model+'</td>'+
+      '<td><span class="tag tag-blue">'+r.brand+'</span></td>'+
+      '<td>'+r.domain+'</td>'+
+      '<td>'+r.dept+'</td>'+
+      '<td class="text-left">'+r.fp+'</td>'+
+      '<td class="text-left">'+r.part+'</td>'+
+      '<td>'+r.eng+'</td>'+
+      '<td class="money">'+fmt(r.unitPrice,'unitPrice')+'</td>'+
+      '<td class="money">'+fmt(r.materialFee,'materialFee')+'</td>'+
+      '<td class="money">'+fmt(r.processFee,'processFee')+'</td>'+
+      '<td class="money">'+fmt(r.profitRate,'profitRate')+'</td>'+
+      '<td class="money">'+fmt(r.targetCost,'targetCost')+'</td>'+
+      '<td class="money">'+fmt(r.actualCost,'actualCost')+'</td>'+
+      '<td><span class="tag tag-green">'+r.achieve+'</span></td>';
+    tbody.appendChild(tr);
+  });
+  if(!filtered.length){
+    tbody.innerHTML='<tr><td colspan="16" style="color:#909399;padding:24px;text-align:center;">当前角色数据范围内无数据</td></tr>';
+  }
+  document.getElementById('totalText').innerText='共 '+filtered.length+' 条';
+}
+function doExport(){
+  var perm = ROLE_PERM[curRole];
+  var maskNote = perm.maskMoney? '（金额字段已脱敏为 *）':'';
+  alert('已导出【仅发布】版本成本分析报表.xlsx'+maskNote+'\n导出与页面共用同一套数据范围与字段权限判定。');
+}
+
+applyRole();
+</script>
+</body>
+</html>
