@@ -97,12 +97,8 @@ var rows = [
 var view = 'all';   /* 默认演示「全量」视图 */
 var filtered = rows.slice();
 
-/* 登录信息（来源：用户登录痕迹 scc_log_user_trace） */
-var LOGIN_INFO = [
-  { user:'冷丹丹', emp:'00130778', count:326, last:'2026-09-21 09:10' },
-  { user:'孙倩',   emp:'00180123', count:210, last:'2026-09-20 16:38' },
-  { user:'王慧芬', emp:'00120456', count:488, last:'2026-09-20 10:02' }
-];
+/* 注：本页只保留「最后登录时间」列（与【用户登录统计】同源，取 scc_log_user_trace 最近一次 loginDate）；
+   累计登录次数 / 时间区间查询与导出已独立到 10_用户登录统计.html，本页不挂入口。 */
 
 function switchView(v, el){
   view = v;
