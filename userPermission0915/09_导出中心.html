@@ -24,7 +24,7 @@
 
     <div class="alert alert-info" style="margin:12px 16px 0;">
       <span class="ico">ⓘ</span>
-      <div>导出中心展示系统内的导出文件。<b>个人视图</b>＝仅当前登录人的导出记录；<b>全量视图</b>＝展示全量导出记录（含 <b>导出人 / 工号 / 研发部门 / 最后登录时间</b>），<b>仅采购可见</b>（由数据权限约束）。下载按 <b>fileuploadId</b> 取件。<br><b>「最后登录时间」列</b>取值同【用户登录统计】（<code>scc_log_user_trace</code> 最近一次 <code>loginDate</code>）；<b>累计登录次数 / 时间区间查询与导出</b>已独立到【用户登录统计】（详见 <b>10_用户登录统计</b>），本页不再挂入口。</div>
+      <div>导出中心展示系统内的导出文件。<b>个人视图</b>＝仅当前登录人的导出记录；<b>全量视图</b>＝展示全量导出记录（含 <b>导出人 / 工号 / 研发部门 / 最后登录时间 / 登录次数</b>），<b>仅采购可见</b>（由数据权限约束）。下载按 <b>fileuploadId</b> 取件。<br><b>「最后登录时间」「登录次数」两列</b>取值同【用户登录统计】（<code>scc_log_user_trace</code>：<b>登录次数</b>取 <code>LOGIN_NUM</code>，<b>最后登录时间</b>取最近一次 <code>loginDate</code>）——<b>登录次数为 0 或长期未登录＝"没用过系统"</b>；该页完整的<b>时间区间查询与导出</b>见 <b>10_用户登录统计</b>，本页只做这两列展示。</div>
     </div>
 
     <div class="search-area" id="searchArea">
@@ -42,7 +42,7 @@
     </div>
 
     <div class="table-toolbar">
-      <div class="left"><span class="toolbar-note">用户登录统计（累计登录次数 / 最后登录时间）已独立到【用户登录统计】页，本页不再挂入口，仅保留「最后登录时间」列。</span></div>
+      <div class="left"><span class="toolbar-note">全量视图保留「最后登录时间」「登录次数」两列（同源于【用户登录统计】）；完整的<b>起始 / 结束时间</b>区间查询与导出见【用户登录统计】页。</span></div>
       <div class="right"><span class="toolbar-note">共 <b id="totalText">0</b> 个文件</span></div>
     </div>
 
@@ -54,6 +54,7 @@
           <th class="all-only" style="width:100px;">工号<span class="new-col-badge">新</span></th>
           <th class="all-only" style="min-width:120px;">研发部门<span class="new-col-badge">新</span></th>
           <th class="all-only" style="width:150px;">最后登录时间<span class="new-col-badge">新</span></th>
+          <th class="all-only" style="width:110px;">登录次数<span class="new-col-badge">新</span></th>
           <th style="min-width:150px;">菜单名称</th>
           <th style="min-width:200px;">文件名称</th>
           <th style="width:90px;">文件大小</th>
@@ -67,7 +68,7 @@
     </div>
 
     <div class="pagination-bar">
-      <span class="muted">「个人 / 全量」由视图切换；全量视图仅采购可见。</span>
+      <span class="muted">「个人 / 全量」由视图切换；全量视图仅采购可见。「最后登录时间」「登录次数」取自【用户登录统计】，按同一区间口径汇总。</span>
     </div>
   </div>
 </div>
@@ -87,18 +88,19 @@ GpmLayout.init({
 
 /* mock：导出记录（全量） */
 var rows = [
-  { exporter:'冷丹丹', emp:'00130778', dept:'采购部',   func:'价格目录',     file:'价格目录导出_20260921.xlsx',   size:'2.3 MB',  status:'完成',  cdate:'2026-09-21 09:12', edate:'2026-09-21 09:13', last:'2026-09-22 08:41', me:true },
-  { exporter:'孙倩',   emp:'00180123', dept:'采购部',   func:'物料维护',     file:'物料清单导出_20260920.xlsx',   size:'8.1 MB',  status:'完成',  cdate:'2026-09-20 16:40', edate:'2026-09-20 16:45', last:'2026-09-20 16:38', me:false },
-  { exporter:'王慧芬', emp:'00120456', dept:'成本工程部', func:'成本分析报表', file:'部门达成情况_20260920.xlsx',   size:'1.2 MB',  status:'完成',  cdate:'2026-09-20 10:05', edate:'2026-09-20 10:06', last:'2026-09-20 10:02', me:false },
-  { exporter:'刘德',   emp:'00150234', dept:'车身开发部', func:'成本分析报表', file:'零件成本明细_20260919.xlsx',   size:'12.6 MB', status:'完成',  cdate:'2026-09-19 14:22', edate:'2026-09-19 14:35', last:'2026-09-19 14:18', me:false },
-  { exporter:'冷丹丹', emp:'00130778', dept:'采购部',   func:'在途成本',     file:'在途成本导出_20260918.xlsx',   size:'—',       status:'生成中', cdate:'2026-09-18 17:30', edate:'', last:'2026-09-22 08:41', me:true },
-  { exporter:'周敏',   emp:'00190456', dept:'财务部',   func:'价格审批单',   file:'价格审批单_20260918.xlsx',     size:'640 KB',  status:'失败',  cdate:'2026-09-18 11:02', edate:'2026-09-18 11:02', last:'2026-06-30 15:20', me:false }
+  { exporter:'冷丹丹', emp:'00130778', dept:'采购部',   func:'价格目录',     file:'价格目录导出_20260921.xlsx',   size:'2.3 MB',  status:'完成',  cdate:'2026-09-21 09:12', edate:'2026-09-21 09:13', last:'2026-09-22 08:41', cnt:326, me:true },
+  { exporter:'孙倩',   emp:'00180123', dept:'采购部',   func:'物料维护',     file:'物料清单导出_20260920.xlsx',   size:'8.1 MB',  status:'完成',  cdate:'2026-09-20 16:40', edate:'2026-09-20 16:45', last:'2026-09-20 16:38', cnt:210, me:false },
+  { exporter:'王慧芬', emp:'00120456', dept:'成本工程部', func:'成本分析报表', file:'部门达成情况_20260920.xlsx',   size:'1.2 MB',  status:'完成',  cdate:'2026-09-20 10:05', edate:'2026-09-20 10:06', last:'2026-09-20 10:02', cnt:488, me:false },
+  { exporter:'刘德',   emp:'00150234', dept:'车身开发部', func:'成本分析报表', file:'零件成本明细_20260919.xlsx',   size:'12.6 MB', status:'完成',  cdate:'2026-09-19 14:22', edate:'2026-09-19 14:35', last:'2026-09-19 14:18', cnt:156, me:false },
+  { exporter:'冷丹丹', emp:'00130778', dept:'采购部',   func:'在途成本',     file:'在途成本导出_20260918.xlsx',   size:'—',       status:'生成中', cdate:'2026-09-18 17:30', edate:'', last:'2026-09-22 08:41', cnt:326, me:true },
+  { exporter:'周敏',   emp:'00190456', dept:'财务部',   func:'价格审批单',   file:'价格审批单_20260918.xlsx',     size:'640 KB',  status:'失败',  cdate:'2026-09-18 11:02', edate:'2026-09-18 11:02', last:'2026-06-30 15:20', cnt:12, me:false }
 ];
 var view = 'all';   /* 默认演示「全量」视图 */
 var filtered = rows.slice();
 
-/* 注：本页只保留「最后登录时间」列（与【用户登录统计】同源，取 scc_log_user_trace 最近一次 loginDate）；
-   累计登录次数 / 时间区间查询与导出已独立到 10_用户登录统计.html，本页不挂入口。 */
+/* 注：本页全量视图保留「最后登录时间」「登录次数」两列（均与【用户登录统计】同源：
+   登录次数取 scc_log_user_trace.LOGIN_NUM，最后登录时间取最近一次 loginDate）；
+   完整的时间区间查询与导出在 10_用户登录统计.html。 */
 
 function switchView(v, el){
   view = v;
@@ -136,6 +138,7 @@ function render(){
       '<td class="all-only">'+r.emp+'</td>'+
       '<td class="all-only text-left">'+r.dept+'</td>'+
       '<td class="all-only">'+(r.last||'<span class="muted">—</span>')+'</td>'+
+      '<td class="all-only">'+(r.cnt!=null?r.cnt:'<span class="muted">—</span>')+'</td>'+
       '<td class="text-left">'+r.func+'</td>'+
       '<td class="text-left">'+r.file+'</td>'+
       '<td>'+(r.size||'—')+'</td>'+
