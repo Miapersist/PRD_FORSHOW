@@ -81,8 +81,14 @@
     <div class="card" onclick="go('09_导出中心.html')">
       <div class="c-title">导出中心<span class="tag type-new">新增</span></div>
       <div class="c-file">09_导出中心.html</div>
-      <div class="c-desc">在导出中心上新增「<b>个人 / 全量</b>」视图切换；<b>全量视图</b>增「导出人 / 工号 / 研发部门」列与筛选，<b>仅采购可见</b>；「累计登录次数 / 最后登录时间」复用现有登录痕迹（<code>scc_log_user_trace</code>）。</div>
-      <div class="c-tags"><span class="tag type-new">个人/全量视图</span><span class="tag type-new">导出人/工号/研发部门</span><span class="tag type-new">仅采购可见</span></div>
+      <div class="c-desc">在导出中心上新增「<b>个人 / 全量</b>」视图切换；<b>全量视图</b>增「导出人 / 工号 / 研发部门 / <b>最后登录时间</b>」列与筛选，<b>仅采购可见</b>。<b>登录信息不再挂在本页</b>（已独立到【登录痕迹页】）。</div>
+      <div class="c-tags"><span class="tag type-new">个人/全量视图</span><span class="tag type-new">导出人/工号/研发部门</span><span class="tag type-new">最后登录时间</span><span class="tag type-new">仅采购可见</span></div>
+    </div>
+    <div class="card" onclick="go('10_登录信息.html')">
+      <div class="c-title">登录信息（登录痕迹页）<span class="tag type-new">改造</span></div>
+      <div class="c-file">10_登录信息.html</div>
+      <div class="c-desc"><b>复用现有登录痕迹页，不新建页面</b>（用户维度 ≠ 文件维度）。改造 3 项：<b>对采购开放查看</b>、<b>新增「导出」</b>（导出当前查询结果，替代人工后台捞数）、<b>补「起始 / 结束时间」查询</b>（25 年合并，要按区间/年度取）。数据源 <code>scc_log_user_trace</code>（<code>LOGIN_NUM</code> / <code>CUMULATIVE_ONLINE_TIME</code>），明细 <code>/api-rbac/traceinfo/listPage</code>。</div>
+      <div class="c-tags"><span class="tag type-new">复用现有页</span><span class="tag type-new">对采购开放</span><span class="tag type-new">新增导出</span><span class="tag type-new">时间区间</span></div>
     </div>
   </div>
 
@@ -115,7 +121,8 @@
       <tr><td>敏感字段元数据（底表，AI提取去掉）</td><td>05_字段元数据维护</td><td>新增</td><td>CRUD + 导入导出（编码强校验）</td></tr>
       <tr><td>人员↔对象统一统筹（含领域采购Tab）</td><td>06_统一统筹页</td><td>新增</td><td>3个Tab + 多选弹窗 + 上游同步只读</td></tr>
       <tr><td>用户权限新增上级领导/上上级领导（部长/本部长）</td><td>01_用户权限</td><td>改造</td><td>IAM 下发的组织层级字段（列表+编辑页只读）</td></tr>
-      <tr><td>导出中心新增「全量」视图（导出人/工号/研发部门，仅采购可见）</td><td>09_导出中心</td><td>新增</td><td>个人/全量切换 + 登录信息复用</td></tr>
+      <tr><td>导出中心新增「全量」视图（导出人/工号/研发部门/最后登录时间，仅采购可见）</td><td>09_导出中心</td><td>新增</td><td>个人/全量切换 + 最后登录时间列</td></tr>
+      <tr><td>登录信息（复用现有登录痕迹页：开放采购 + 新增导出 + 时间区间）</td><td>10_登录信息</td><td>改造</td><td>不新建页面；用户维度统计</td></tr>
       <tr><td>车型↔零件关系来源（不建独立页）</td><td>07_车型项目管理</td><td>改造</td><td>项目列表 + 展开零件BOM</td></tr>
       <tr><td>报表仅看发布数据 + 按报表列过滤 + 脱敏</td><td>08_成本分析报表</td><td>改造</td><td>三类角色切换演示数据范围与脱敏</td></tr>
     </tbody>

@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>登录信息（登录痕迹页）- GPM系统</title>
+<link rel="stylesheet" href="_common/gpm.css">
+<style>
+  .export-dl{ color:#1869e1; cursor:pointer; }
+</style>
+</head>
+<body>
+
+<template id="page-body">
+<div class="page" style="padding:0;display:flex;flex-direction:column;overflow:hidden;">
+  <div class="panel" style="flex:1;display:flex;flex-direction:column;min-height:0;border:none;border-radius:0;">
+
+    <div class="inner-tabs">
+      <div class="tab-btn active" data-view="all" onclick="switchView('all',this)">登录信息<span class="new-col-badge">改造</span><span class="muted">（对采购开放）</span></div>
+    </div>
+
+    <div class="alert alert-info" style="margin:12px 16px 0;">
+      <span class="ico">ⓘ</span>
+      <div><b>复用现有登录痕迹页，不新建页面</b>——登录信息是<b>用户维度</b>的登录统计，与导出中心的<b>文件维度</b>导出记录不是同一场景，故独立于导出中心。<br>本次改造 3 项：<b>① 对采购开放查看</b>（数据权限约束为仅采购 / 领导可见）；<b>② 新增「导出」按钮</b>（导出当前查询结果，替代人工到后台捞数）；<b>③ 查询条件补「起始 / 结束时间」</b>（支持"25 年至今 / 26 年至今"，因 25 年合并）。<br>数据来源：<code>scc_log_user_trace</code>（<code>LOGIN_NUM</code> 登录次数、<code>CUMULATIVE_ONLINE_TIME</code> 累计在线时间）；明细 <code>/api-rbac/traceinfo/listPage</code>。</div>
+    </div>
+
+    <div class="search-area" id="searchArea">
+      <div class="search-form">
+        <div class="search-item"><label>用户：</label><input type="text" id="qUser" placeholder="姓名 / 账号"></div>
+        <div class="search-item"><label>工号：</label><input type="text" id="qEmp" placeholder="请输入工号"></div>
+        <div class="search-item"><label>研发部门：</label><input type="text" id="qDept" placeholder="请输入研发部门"></div>
+        <div class="search-item"><label>起始时间：</label><input type="date" id="qFrom" value="2026-01-01"></div>
+        <div class="search-item"><label>结束时间：</label><input type="date" id="qTo" value="2026-09-22"></div>
+        <div class="search-actions">
+          <button class="btn btn-primary" onclick="doSearch()">查询</button>
+          <button class="btn btn-default" onclick="resetSearch()">重置</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="table-toolbar">
+      <div class="left">
+        <button class="btn btn-primary" onclick="doExport()">导出</button>
+        <span class="toolbar-note">导出当前查询结果（Excel 清单）</span>
+      </div>
+      <div class="right"><span class="toolbar-note">共 <b id="totalText">0</b> 个用户</span></div>
+    </div>
+
+    <div class="table-wrap" style="flex:1;overflow:auto;min-height:0;">
+      <table class="list-table">
+        <thead><tr>
+          <th style="width:46px;">序号</th>
+          <th style="min-width:100px;">用户</th>
+          <th style="width:100px;">工号</th>
+          <th style="min-width:120px;">研发部门</th>
+          <th style="width:120px;">累计登录次数</th>
+          <th style="width:120px;">累计在线时间</th>
+          <th style="width:150px;">最后登录时间</th>
+          <th style="width:80px;">操作</th>
+        </tr></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+
+    <div class="pagination-bar">
+      <span class="muted">「累计登录次数 / 累计在线时间」按「起始 / 结束时间」区间汇总；点击「明细」查看该用户的逐次登录记录（登录时间 / 登出时间 / 单次在线时长 / 登录 IP）。</span>
+    </div>
+  </div>
+</div>
+</template>
+
+<script src="_common/gpm-layout.js"></script>
+<script>
+GpmLayout.init({
+  activePage: 'loginTrace',
+  breadcrumb: ['首页', '系统管理', '登录信息'],
+  tabs: [
+    { key:'home', label:'首页', closable:false },
+    { key:'loginTrace', label:'登录信息' }
+  ],
+  activeTab: 'loginTrace'
+});
+
+/* mock：登录痕迹汇总（区间：2026-01-01 ~ 2026-09-22） */
+var rows = [
+  { user:'冷丹丹', emp:'00130778', dept:'采购部',     count:326, online:'612 小时', last:'2026-09-22 08:41', me:true },
+  { user:'孙倩',   emp:'00180123', dept:'采购部',     count:210, online:'398 小时', last:'2026-09-20 16:38' },
+  { user:'王慧芬', emp:'00120456', dept:'成本工程部', count:488, online:'964 小时', last:'2026-09-20 10:02' },
+  { user:'刘德',   emp:'00150234', dept:'车身开发部', count:156, online:'287 小时', last:'2026-09-19 14:18' },
+  { user:'周敏',   emp:'00190456', dept:'财务部',     count:12,  online:'19 小时',  last:'2026-06-30 15:20' }
+];
+
+/* mock：明细（按 traceId） */
+var DETAIL = {
+  '00130778': [
+    { in:'2026-09-22 08:41', out:'2026-09-22 09:58', dur:'1 小时 17 分', ip:'10.20.31.44' },
+    { in:'2026-09-21 09:10', out:'2026-09-21 18:02', dur:'8 小时 52 分', ip:'10.20.31.44' },
+    { in:'2026-09-20 09:05', out:'2026-09-20 17:41', dur:'8 小时 36 分', ip:'10.20.31.44' }
+  ],
+  '00190456': [
+    { in:'2026-06-30 15:20', out:'2026-06-30 15:39', dur:'19 分', ip:'10.20.44.9' }
+  ]
+};
+
+var filtered = rows.slice();
+
+function switchView(v, el){
+  document.querySelectorAll('.inner-tabs .tab-btn').forEach(function(x){ x.classList.remove('active'); });
+  if(el) el.classList.add('active');
+  doSearch();
+}
+function doSearch(){
+  var u=document.getElementById('qUser').value.trim(), e=document.getElementById('qEmp').value.trim(),
+      d=document.getElementById('qDept').value.trim();
+  filtered = rows.filter(function(r){
+    if(u && r.user.indexOf(u)<0) return false;
+    if(e && r.emp.indexOf(e)<0) return false;
+    if(d && r.dept.indexOf(d)<0) return false;
+    return true;
+  });
+  render();
+}
+function resetSearch(){
+  ['qUser','qEmp','qDept'].forEach(function(id){ document.getElementById(id).value=''; });
+  document.getElementById('qFrom').value='2026-01-01';
+  document.getElementById('qTo').value='2026-09-22';
+  doSearch();
+}
+function render(){
+  var tb=document.getElementById('tbody'); tb.innerHTML='';
+  filtered.forEach(function(r,i){
+    var tr=document.createElement('tr');
+    tr.innerHTML =
+      '<td>'+(i+1)+'</td>'+
+      '<td class="text-left">'+r.user+(r.me?' <span class="tag tag-blue">本人</span>':'')+'</td>'+
+      '<td>'+r.emp+'</td>'+
+      '<td class="text-left">'+r.dept+'</td>'+
+      '<td>'+r.count+'</td>'+
+      '<td>'+(r.online||'—')+'</td>'+
+      '<td>'+r.last+'</td>'+
+      '<td><span class="export-dl" onclick="showDetail(\''+r.emp+'\',\''+r.user+'\')">明细</span></td>';
+    tb.appendChild(tr);
+  });
+  document.getElementById('totalText').innerText=filtered.length;
+}
+function showDetail(emp, user){
+  var d = DETAIL[emp];
+  var s = '登录明细：'+user+'（'+emp+'）\n\n';
+  if(!d){ s += '（原型占位：该用户明细数据略）'; }
+  else { d.forEach(function(x){ s += x.in+' ~ '+x.out+'　在线 '+x.dur+'　IP '+x.ip+'\n'; }); }
+  alert(s);
+}
+function doExport(){
+  alert('导出：'+filtered.length+' 条\n（原型占位，实际导出当前查询结果为 Excel；'
+      + '替代现状"人工找后台捞数"）');
+}
+
+doSearch();
+</script>
+</body>
+</html>
