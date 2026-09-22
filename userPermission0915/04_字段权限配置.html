@@ -32,6 +32,7 @@
             <option value="成本分析-部门达成情况">成本分析-部门达成情况</option>
             <option value="成本分析-采购成本达成">成本分析-采购成本达成</option>
             <option value="成本分析-变化履历">成本分析-变化履历</option>
+            <option value="价格目录">价格目录</option>
           </select></div>
         <div class="search-item"><label>配置方式：</label>
           <div class="mode-tabs">
@@ -137,6 +138,11 @@ var PAGE_FIELDS = {
     { code:'cost:chgHistory:lastPrice',  name:'上次价格' },
     { code:'cost:chgHistory:curPrice',   name:'本次价格' },
     { code:'cost:chgHistory:diffAmount', name:'价差金额' }
+  ],
+  '价格目录': [
+    { code:'price:catalog:supplierName', name:'供应商名称' },
+    { code:'price:catalog:buyer',        name:'采购员' },
+    { code:'price:catalog:dept',         name:'科室' }
   ]
 };
 

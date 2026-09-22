@@ -59,7 +59,7 @@
 
     <div class="alert alert-info" style="margin-top:0;">
       <span class="ico">ⓘ</span>
-      <div><b>本次改造</b>：① 列表补齐生产现状字段（工号／手机号／邮箱／账号类型／生效日期／失效日期）并新增<b>集团SAP工号</b>（DDHR 提供，与「工号」非同一字段）；② 承接 IAM <b>一级/二级/三级部门</b>、岗位、在职/离职、离职日期；③ 新增<b>转岗前岗位／转岗时间</b>（每 30 分钟增量同步，岗位变化写入）；④ 移除「权限」列（收敛到【角色维护】）、「岗位」「角色」列保留；⑤ <b>新增「更新用户」</b>按钮（现网「导入用户」只能新增、不能更新）。</div>
+      <div><b>本次改造</b>：① 列表补齐生产现状字段（工号／手机号／邮箱／账号类型／生效日期／失效日期）并新增<b>集团SAP工号</b>（DDHR 提供，与「工号」非同一字段）；② 承接 IAM <b>一级/二级/三级部门</b>、<b>上级领导 / 上上级领导（部长 / 本部长）</b>、岗位、在职/离职、离职日期；③ 新增<b>转岗前岗位／转岗时间</b>（每 30 分钟增量同步，岗位变化写入）；④ 移除「权限」列（收敛到【角色维护】）、「岗位」「角色」列保留；⑤ <b>新增「更新用户」</b>按钮（现网「导入用户」只能新增、不能更新）。</div>
     </div>
 
     <div class="table-wrap" style="flex:1;overflow:auto;min-height:0;">
@@ -75,6 +75,8 @@
           <th class="new-col" style="min-width:100px;">一级部门<span class="new-col-badge">新</span></th>
           <th class="new-col" style="min-width:100px;">二级部门<span class="new-col-badge">新</span></th>
           <th class="new-col" style="min-width:100px;">三级部门<span class="new-col-badge">新</span></th>
+          <th class="new-col" style="min-width:96px;">上级领导<span class="new-col-badge">新</span></th>
+          <th class="new-col" style="min-width:96px;">上上级领导<span class="new-col-badge">新</span></th>
           <th style="min-width:90px;">岗位</th>
           <th class="new-col" style="width:80px;">在职状态<span class="new-col-badge">新</span></th>
           <th class="new-col" style="width:96px;">离职日期<span class="new-col-badge">新</span></th>
@@ -135,6 +137,10 @@
           <div class="form-item"><label>一级部门：</label><input type="text" id="fD1" readonly placeholder="由IAM下发"></div>
           <div class="form-item"><label>二级部门：</label><input type="text" id="fD2" readonly placeholder="由IAM下发"></div>
           <div class="form-item"><label>三级部门：</label><input type="text" id="fD3" readonly placeholder="由IAM下发"></div>
+        </div>
+        <div class="form-row new-col">
+          <div class="form-item"><label>上级领导：</label><input type="text" id="fLeader" readonly placeholder="由IAM下发（部长）"></div>
+          <div class="form-item"><label>上上级领导：</label><input type="text" id="fLeader2" readonly placeholder="由IAM下发（本部长）"></div>
         </div>
         <div class="form-row">
           <div class="form-item"><label>集团SAP工号：</label><input type="text" id="fGacCode" readonly placeholder="由DDHR下发"></div>
@@ -260,6 +266,7 @@ var users = [
   { acc:'jiangtao', emp:'00250456', gac:'GAC1001778', name:'姜涛', phone:'138****0015', email:'jiangtao@gac.com.cn', d1:'研发总院', d2:'车身开发部', d3:'车身科', post:'研发工程师', status:'离职', leave:'2026-05-12', prePost:'', preTime:'', roles:['使用工程师'], type:'BUYER' }
 ];
 var ALL_ROLES = ['成本管理员','成本系长','成本科长','成本经理','采购员','采购系长','采购科长','财务专员','财务科长','领域经理','部门经理','使用工程师','PL','生准担当'];
+users.forEach(function(u){ if(u.leader===undefined){ u.leader=(u.d1==='研发总院')?'研发体系部长':''; u.leader2=(u.d1==='研发总院')?'研发总院本部长':''; } });
 var filtered = users.slice();
 var curPage=1, pageSize=15, editIdx=-1;
 var orgRows=[], roleRows=[];
@@ -286,6 +293,8 @@ function render(){
       '<td class="new-col">'+u.d1+'</td>'+
       '<td class="new-col">'+u.d2+'</td>'+
       '<td class="new-col">'+u.d3+'</td>'+
+      '<td class="new-col">'+(u.leader||'<span class="muted">—</span>')+'</td>'+
+      '<td class="new-col">'+(u.leader2||'<span class="muted">—</span>')+'</td>'+
       '<td>'+u.post+'</td>'+
       '<td class="new-col">'+statusTag(u.status)+'</td>'+
       '<td class="new-col">'+(u.leave||'<span class="muted">—</span>')+'</td>'+
@@ -342,6 +351,7 @@ function openEdit(gi){
   fName.value=u.name; fPhone.value=u.phone||'138****0000'; fEmail.value=u.email||(u.acc+'@gac.com.cn');
   fEmpNo.value=u.emp; fGacCode.value=u.gac||''; fCompany.value='广汽集团'; fPost.value=u.post;
   fD1.value=u.d1; fD2.value=u.d2; fD3.value=u.d3;
+  fLeader.value=u.leader||''; fLeader2.value=u.leader2||'';
   fStatus.value=u.status; fLeave.value=u.leave||''; fPrePost.value=u.prePost||''; fPreTime.value=u.preTime||'';
   document.getElementById('fStart').value = u.start||today();
   document.getElementById('fEnd').value = u.end||'';

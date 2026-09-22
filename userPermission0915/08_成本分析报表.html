@@ -23,20 +23,20 @@
     <div class="demo-role-bar">
       <b>演示：以不同角色查看本报表</b>
       <select id="demoRole" onchange="applyRole()">
-        <option value="domainManager">领域经理（按领域：内外饰）</option>
-        <option value="deptManager">部门经理（按部门：车身开发部）</option>
+        <option value="domainManager">领域经理（按研发领域：内外饰）</option>
+        <option value="deptManager">部门经理（按研发部门：车身开发部）</option>
         <option value="useEngineer">使用工程师（按功能包：责任工程师＝本人）</option>
       </select>
-      <span class="muted">切换后演示「数据范围（按报表领域/部门/功能包列过滤）＋字段权限脱敏」效果</span>
+      <span class="muted">切换后演示「数据范围（按报表研发领域/研发部门/功能包列过滤）＋字段权限脱敏」效果</span>
     </div>
 
     <div class="search-area" id="searchArea">
       <div class="search-form">
         <div class="search-item"><label>项目代号：</label><input type="text" id="qProj" placeholder="请输入项目代号"></div>
         <div class="search-item"><label>车型：</label><input type="text" id="qModel" placeholder="请输入车型"></div>
-        <div class="search-item"><label>领域：</label>
+        <div class="search-item"><label>研发领域：</label>
           <select id="qDomain"><option value="">全部</option><option>内外饰</option><option>车身</option><option>底盘</option><option>智联</option></select></div>
-        <div class="search-item"><label>部门：</label>
+        <div class="search-item"><label>研发部门：</label>
           <select id="qDept"><option value="">全部</option><option>车身开发部</option><option>架构开发部</option><option>智能座舱产品线</option></select></div>
         <div class="search-item"><label>功能包：</label><input type="text" id="qFp" placeholder="请输入功能包"></div>
         <div class="search-item"><label>数据版本：</label>
@@ -61,8 +61,8 @@
           <th style="min-width:110px;">项目代号</th>
           <th style="min-width:100px;">车型</th>
           <th style="width:90px;">品牌</th>
-          <th style="min-width:90px;">领域</th>
-          <th style="min-width:100px;">部门</th>
+          <th style="min-width:90px;">研发领域</th>
+          <th style="min-width:100px;">研发部门</th>
           <th style="min-width:120px;">功能包</th>
           <th style="min-width:130px;">零件名称</th>
           <th style="width:100px;">责任工程师</th>
@@ -81,7 +81,7 @@
     <div class="pagination-bar">
       <select><option>15条/页</option><option>30条/页</option></select>
       <span id="totalText">共 0 条</span>
-      <span class="muted">数据范围按报表「领域/部门/功能包/责任工程师」列过滤（代码写死）；无权字段以 * 显示，导出同样脱敏。</span>
+      <span class="muted">数据范围按报表「研发领域/研发部门/功能包/责任工程师」列过滤（代码写死）；无权字段以 * 显示，导出同样脱敏。</span>
     </div>
   </div>
 </div>
@@ -100,14 +100,14 @@ GpmLayout.init({
 });
 
 /* ================= 角色权限模型（与数据权限/字段权限配置联动） =================
- * 数据范围：领域（成本）/部门/功能包/责任工程师 均「代码写死」，直接取报表对应列过滤。
+ * 数据范围：研发领域/研发部门/功能包/责任工程师 均「代码写死」，直接取报表对应列过滤。
  * 字段权限：命中屏蔽字段则输出 *（列表/详情/导出/接口四端一致）。
  */
 var ROLE_PERM = {
   domainManager: { scope:'domain',  domain:'内外饰', maskMoney:false, maskFields:[],
-                   label:'领域经理（按领域：内外饰）' },
+                   label:'领域经理（按研发领域：内外饰）' },
   deptManager:   { scope:'dept',    dept:'车身开发部', maskMoney:false, maskFields:[],
-                   label:'部门经理（按部门：车身开发部）' },
+                   label:'部门经理（按研发部门：车身开发部）' },
   useEngineer:   { scope:'engineer', eng:'刘德', maskMoney:true,
                    maskFields:['unitPrice','materialFee','processFee','profitRate','targetCost','actualCost'],
                    label:'使用工程师（按功能包：责任工程师＝本人 / 金额脱敏）' }
@@ -138,9 +138,9 @@ function updateVerAlert(){
   var t = document.getElementById('verAlertText');
   var scopeTip = '';
   if(perm.scope==='domain'){
-    scopeTip = '数据范围：按<b>领域</b>过滤，仅可见「领域＝'+perm.domain+'」的数据（领域列写死匹配）。';
+    scopeTip = '数据范围：按<b>研发领域</b>过滤，仅可见「研发领域＝'+perm.domain+'」的数据（研发领域列写死匹配）。';
   } else if(perm.scope==='dept'){
-    scopeTip = '数据范围：按<b>部门</b>过滤，仅可见「部门＝'+perm.dept+'」的数据（部门列写死匹配）。';
+    scopeTip = '数据范围：按<b>研发部门</b>过滤，仅可见「研发部门＝'+perm.dept+'」的数据（研发部门列写死匹配）。';
   } else {
     scopeTip = '数据范围：按<b>功能包</b>过滤，仅可见「责任工程师＝'+perm.eng+'」名下的功能包数据（责任工程师列写死匹配）。';
   }

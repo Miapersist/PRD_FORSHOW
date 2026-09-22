@@ -45,9 +45,9 @@
         <div class="search-item"><label>角色名称：</label><input type="text" id="qRole" placeholder="请输入角色名称"></div>
         <div class="search-item new-col"><label>领域（采购）：</label>
           <select id="qDomainBuy"><option value="">全部</option><option>内外饰</option><option>车身</option><option>底盘</option></select></div>
-        <div class="search-item new-col"><label>领域（成本）：</label>
+        <div class="search-item new-col"><label>研发领域：</label>
           <select id="qDomainCost"><option value="">全部</option><option>内外饰</option><option>车身</option><option>底盘</option><option>智联</option></select></div>
-        <div class="search-item new-col"><label>部门：</label>
+        <div class="search-item new-col"><label>研发部门：</label>
           <select id="qDept"><option value="">全部</option><option>车身开发部</option><option>架构开发部</option></select></div>
         <div class="search-item new-col"><label>启用扩展权限：</label>
           <select id="qExt"><option value="">全部</option><option>是</option><option>否</option></select></div>
@@ -66,7 +66,7 @@
 
     <div class="alert alert-info" style="margin-top:0;">
       <span class="ico">ⓘ</span>
-      <div><b>本次改造</b>：① 「领域」拆分为<b>采购/成本</b>两个独立开关；② <b>移除「部门」「功能包」「领域（成本）」3 个开关</b>——直接读报表对应列，<b>代码写死</b>；③ 新增<b>「启用扩展权限」开关</b>（并列维度开关）+ <b>「扩展条件」子表</b>，承载部门·功能包·数据版本。</div>
+      <div><b>本次改造</b>：① 「领域」拆分为<b>采购/研发</b>两个独立口径；② <b>移除「研发部门」「功能包」「研发领域」3 个开关</b>——直接读报表对应列，<b>代码写死</b>；③ 新增<b>「启用扩展权限」开关</b>（并列维度开关）+ <b>「扩展条件」子表</b>，承载研发部门·功能包·数据版本。</div>
     </div>
 
     <div class="table-wrap" style="flex:1;overflow:auto;min-height:0;">
@@ -144,8 +144,8 @@
         <div class="panel-title" style="font-size:14px;">不设开关的维度（代码写死，直接读报表列）</div>
         <div class="panel-body">
           <div class="dim-grid">
-            <div class="dim-cell locked"><div><div class="dim-name">领域（成本）</div><div class="dim-desc">报表「领域」列，代码写死</div></div><span class="tag tag-gray">写死</span></div>
-            <div class="dim-cell locked"><div><div class="dim-name">部门</div><div class="dim-desc">报表「部门」列，代码写死</div></div><span class="tag tag-gray">写死</span></div>
+            <div class="dim-cell locked"><div><div class="dim-name">研发领域</div><div class="dim-desc">报表「研发领域」列，代码写死</div></div><span class="tag tag-gray">写死</span></div>
+            <div class="dim-cell locked"><div><div class="dim-name">研发部门</div><div class="dim-desc">报表「研发部门」列，代码写死</div></div><span class="tag tag-gray">写死</span></div>
             <div class="dim-cell locked"><div><div class="dim-name">功能包</div><div class="dim-desc">报表「功能包」列，代码写死</div></div><span class="tag tag-gray">写死</span></div>
             <div class="dim-cell locked"><div><div class="dim-name">责任工程师（使用工程师）</div><div class="dim-desc">报表「责任工程师」列，代码写死</div></div><span class="tag tag-gray">写死</span></div>
           </div>
@@ -158,7 +158,7 @@
         <div class="panel-title" style="font-size:14px;">维度间关系</div>
         <div class="panel-body">
           <div class="field-col">
-            <input type="text" id="fRelExpr" placeholder="如：车型 AND 工厂 或 (车型 AND 工厂) OR 领域" style="width:100%;height:32px;border:1px solid #dcdfe6;border-radius:4px;padding:0 10px;">
+            <input type="text" id="fRelExpr" placeholder="如：车型 AND 工厂 或 (车型 AND 工厂) OR 研发领域" style="width:100%;height:32px;border:1px solid #dcdfe6;border-radius:4px;padding:0 10px;">
             <div class="err" id="relErr"></div>
             <div class="muted">仅允许「本次已勾选的维度名」＋ AND / OR ＋ 圆括号；默认全部取并集，存量零迁移；保留原始表达式（不做中文回显）。</div>
           </div>
@@ -174,7 +174,7 @@
         </div>
         <div class="panel-body" id="extBox" style="display:none;">
           <div class="flex-gap" style="justify-content:space-between;margin-bottom:8px;">
-            <span class="muted">结构化条件为主、高级 SQL 兜底；承载<b>部门·功能包·数据版本</b>等个性化过滤</span>
+            <span class="muted">结构化条件为主、高级 SQL 兜底；承载<b>研发部门·功能包·数据版本</b>等个性化过滤</span>
             <button class="btn btn-primary btn-sm" onclick="addExtRow()">新增条件</button>
           </div>
           <table class="ext-table">
@@ -337,7 +337,7 @@ function openEdit(gi){
     document.getElementById('fExtOn').checked = c.ext==='是';
     if(c.ext==='是'){
       extRows=[
-        { name:'部门',   src:'报表字段', col:'dept',   op:'等于', val:'车身开发部', rel:'AND', on:true },
+        { name:'研发部门',   src:'报表字段', col:'dept',   op:'等于', val:'车身开发部', rel:'AND', on:true },
         { name:'数据版本', src:'SQL片段', col:'',       op:'',     val:'AND paramSource IN (\'month\',\'monthP\',\'monthSingle\',\'valvePoint\')', rel:'AND', on:true, dryRunOk:true, hasHistory:true, prevVal:'' }
       ];
     }
@@ -399,7 +399,7 @@ function renderExt(){
 }
 
 function addExtRow(){
-  extRows.push({name:'部门',src:'报表字段',col:'',op:'等于',val:'',rel:'AND',on:true});
+  extRows.push({name:'研发部门',src:'报表字段',col:'',op:'等于',val:'',rel:'AND',on:true});
   renderExt();
 }
 function changeExtSrc(i, v){
@@ -446,7 +446,7 @@ function sqlDryRun(){
 function sqlDataPreview(){
   if(!sqlCheck()) return;
   sqlOut('<span class="ok">✓ 数据预览</span>（按当前条件命中的数据，前 5 条）'+
-    '<table><thead><tr><th>项目代号</th><th>车型</th><th>领域</th><th>部门</th><th>功能包</th></tr></thead>'+
+    '<table><thead><tr><th>项目代号</th><th>车型</th><th>研发领域</th><th>研发部门</th><th>功能包</th></tr></thead>'+
     '<tbody>'+
     '<tr><td>PRJ-AY2025</td><td>AION Y</td><td>内外饰</td><td>车身开发部</td><td>内饰包</td></tr>'+
     '<tr><td>PRJ-AY2025</td><td>AION Y</td><td>内外饰</td><td>车身开发部</td><td>仪表包</td></tr>'+

@@ -35,8 +35,8 @@
   <div class="nav-header">
     <h1>系统用户权限优化改造 · 页面原型导航<span class="ver-tag">0915</span></h1>
     <div class="sub">
-      依据《用户权限管理蓝图详设 1.0_0915》+ 0914/0915 评审与业务口径（<b>移除领域（成本）/部门/功能包开关，改为代码写死取报表列</b>；新增「启用扩展权限」开关+扩展条件子表；数据版本走扩展SQL；AI批量提取去掉；统一统筹页新增「领域（采购）」Tab、取消「零件号」Tab），<br>
-      结合真实前端（cloud-gacmsrm-front，Vue2 + Element UI 蓝白主题）页面风格产出。共 <b>8 个页面</b>，含真实数据与交互逻辑。点击卡片进入。
+      依据《用户权限管理蓝图详设 1.0_0915》+ 0914/0915 评审与业务口径（<b>移除研发领域/研发部门/功能包开关，改为代码写死取报表列</b>；新增「启用扩展权限」开关+扩展条件子表；数据版本走扩展SQL；AI批量提取去掉；统一统筹页新增「领域（采购）」Tab、取消「零件号」Tab），<br>
+      结合真实前端（cloud-gacmsrm-front，Vue2 + Element UI 蓝白主题）页面风格产出。共 <b>9 个页面</b>，含真实数据与交互逻辑。点击卡片进入。
     </div>
   </div>
 
@@ -45,8 +45,8 @@
     <div class="card" onclick="go('01_用户权限.html')">
       <div class="c-title">用户权限<span class="tag type-mod">改造</span></div>
       <div class="c-file">01_用户权限.html</div>
-      <div class="c-desc">账号与组织身份、角色绑定。列表共 <b>19 列</b>：新增集团SAP工号、手机号、邮箱、一/二/三级部门、在职状态、离职日期、转岗前岗位/转岗时间、角色、生效/失效日期；工具条对齐生产 5 按钮并新增「更新用户」；移除「权限」列。</div>
-      <div class="c-tags"><span class="tag type-mod">集团SAP工号</span><span class="tag type-mod">IAM三级部门</span><span class="tag type-mod">在职离职</span><span class="tag type-mod">转岗字段</span><span class="tag type-new">更新用户</span></div>
+      <div class="c-desc">账号与组织身份、角色绑定。列表共 <b>21 列</b>：新增集团SAP工号、手机号、邮箱、一/二/三级部门、<b>上级领导/上上级领导</b>、在职状态、离职日期、转岗前岗位/转岗时间、角色、生效/失效日期；工具条对齐生产 5 按钮并新增「更新用户」；移除「权限」列。</div>
+      <div class="c-tags"><span class="tag type-mod">集团SAP工号</span><span class="tag type-mod">IAM三级部门</span><span class="tag type-mod">上级领导/上上级领导</span><span class="tag type-mod">在职离职</span><span class="tag type-mod">转岗字段</span><span class="tag type-new">更新用户</span></div>
     </div>
     <div class="card" onclick="go('02_角色维护.html')">
       <div class="c-title">角色维护<span class="tag type-mod">改造</span></div>
@@ -57,7 +57,7 @@
     <div class="card" onclick="go('03_数据权限配置.html')">
       <div class="c-title">数据权限配置<span class="tag type-mod">改造</span></div>
       <div class="c-file">03_数据权限配置.html</div>
-      <div class="c-desc">「领域」拆为采购/成本两个独立开关；<b>移除「领域（成本）／部门／功能包」3 个开关</b>（代码写死、直接读报表列）；新增「<b>启用扩展权限</b>」开关 + 「<b>扩展条件</b>」子表（结构化/高级SQL）承载部门·功能包·数据版本；「维度间关系」改表达式输入。</div>
+      <div class="c-desc">「领域」拆为采购/研发两个独立口径；<b>移除「研发领域／研发部门／功能包」3 个开关</b>（代码写死、直接读报表列）；新增「<b>启用扩展权限</b>」开关 + 「<b>扩展条件</b>」子表（结构化/高级SQL）承载研发部门·功能包·数据版本；「维度间关系」改表达式输入。</div>
       <div class="c-tags"><span class="tag type-v52">启用扩展权限</span><span class="tag type-v52">扩展条件子表</span><span class="tag type-mod">领域拆采购/成本</span><span class="tag type-mod">维度间关系</span></div>
     </div>
     <div class="card" onclick="go('04_字段权限配置.html')">
@@ -77,6 +77,12 @@
       <div class="c-file">06_统一统筹页.html</div>
       <div class="c-desc">Tab 集中维护「人员↔车型 / 品牌×海内外 / <b>领域（采购）</b>」可见范围；<b>取消「零件号」Tab</b>（与零件认领重复）。定位为<b>「补位」</b>：能读来源的读来源 + 人工补充。可见对象改用<b>多选弹窗</b>，不支持自由输入；上游同步记录<b>只读</b>。</div>
       <div class="c-tags"><span class="tag type-new">人员↔对象</span><span class="tag type-new">领域(采购)Tab</span><span class="tag type-new">多选弹窗</span><span class="tag type-new">上游只读</span></div>
+    </div>
+    <div class="card" onclick="go('09_导出中心.html')">
+      <div class="c-title">导出中心<span class="tag type-new">新增</span></div>
+      <div class="c-file">09_导出中心.html</div>
+      <div class="c-desc">在导出中心上新增「<b>个人 / 全量</b>」视图切换；<b>全量视图</b>增「导出人 / 工号 / 研发部门」列与筛选，<b>仅采购可见</b>；「累计登录次数 / 最后登录时间」复用现有登录痕迹（<code>scc_log_user_trace</code>）。</div>
+      <div class="c-tags"><span class="tag type-new">个人/全量视图</span><span class="tag type-new">导出人/工号/研发部门</span><span class="tag type-new">仅采购可见</span></div>
     </div>
   </div>
 
@@ -100,7 +106,7 @@
   <table class="map-table">
     <thead><tr><th>方案改造点</th><th>对应页面</th><th>类型</th><th>关键交互</th></tr></thead>
     <tbody>
-      <tr><td class="g1">移除领域（成本）/部门/功能包开关、代码写死取报表列</td><td>03_数据权限配置</td><td>改造</td><td>不设开关的维度以「写死」只读标记呈现</td></tr>
+      <tr><td class="g1">移除研发领域/研发部门/功能包开关、代码写死取报表列</td><td>03_数据权限配置</td><td>改造</td><td>不设开关的维度以「写死」只读标记呈现</td></tr>
       <tr><td class="g1">新增「启用扩展权限」开关 + 扩展条件子表</td><td>03_数据权限配置</td><td>新增</td><td>勾选开关 → 展开扩展条件表（列名/操作符/值/关系）</td></tr>
       <tr><td>数据版本可见性改走扩展SQL</td><td>03_数据权限配置</td><td>改造</td><td>扩展条件中以「版本字段 + IN 发布类取值」实现</td></tr>
       <tr><td>角色维护取消批量编辑 + 导入7列 + 类型5项</td><td>02_角色维护</td><td>改造</td><td>去勾选UI + 管理部门模糊筛选 + 导出全量</td></tr>
@@ -108,6 +114,8 @@
       <tr><td>字段权限（四端脱敏 + 人员例外三态）</td><td>04_字段权限配置</td><td>新增</td><td>角色/人员双模式切换 + 5个按钮 + 无预览</td></tr>
       <tr><td>敏感字段元数据（底表，AI提取去掉）</td><td>05_字段元数据维护</td><td>新增</td><td>CRUD + 导入导出（编码强校验）</td></tr>
       <tr><td>人员↔对象统一统筹（含领域采购Tab）</td><td>06_统一统筹页</td><td>新增</td><td>3个Tab + 多选弹窗 + 上游同步只读</td></tr>
+      <tr><td>用户权限新增上级领导/上上级领导（部长/本部长）</td><td>01_用户权限</td><td>改造</td><td>IAM 下发的组织层级字段（列表+编辑页只读）</td></tr>
+      <tr><td>导出中心新增「全量」视图（导出人/工号/研发部门，仅采购可见）</td><td>09_导出中心</td><td>新增</td><td>个人/全量切换 + 登录信息复用</td></tr>
       <tr><td>车型↔零件关系来源（不建独立页）</td><td>07_车型项目管理</td><td>改造</td><td>项目列表 + 展开零件BOM</td></tr>
       <tr><td>报表仅看发布数据 + 按报表列过滤 + 脱敏</td><td>08_成本分析报表</td><td>改造</td><td>三类角色切换演示数据范围与脱敏</td></tr>
     </tbody>

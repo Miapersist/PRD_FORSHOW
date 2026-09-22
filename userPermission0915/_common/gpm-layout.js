@@ -19,8 +19,9 @@ var GpmLayout = (function () {
       { label: '角色维护', key: 'roleMaintenance', page: '02_角色维护.html' },
       { label: '数据权限配置', key: 'dataAuthConfig', page: '03_数据权限配置.html' },
       { label: '字段权限配置', key: 'fieldPermission', page: '04_字段权限配置.html' },
-      { label: '字段元数据维护', key: 'fieldMetadata', page: '05_字段元数据维护.html' },
+      { label: '敏感字段元数据维护', key: 'fieldMetadata', page: '05_字段元数据维护.html' },
       { label: '统一统筹页', key: 'unifiedScope', page: '06_统一统筹页.html' },
+      { label: '导出中心', key: 'exportCenter', page: '09_导出中心.html' },
       { label: '功能维护' },
       { label: '菜单维护' }
     ]},

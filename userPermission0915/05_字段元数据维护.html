@@ -14,7 +14,7 @@
     <div class="search-area" id="searchArea">
       <div class="search-form">
         <div class="search-item"><label>页面：</label>
-          <select id="qPage"><option value="">全部</option><option>成本分析-功能包及采购成本达成</option><option>成本分析-部门达成情况</option><option>成本分析-采购成本达成</option><option>成本分析-变化履历</option></select></div>
+          <select id="qPage"><option value="">全部</option><option>成本分析-功能包及采购成本达成</option><option>成本分析-部门达成情况</option><option>成本分析-采购成本达成</option><option>成本分析-变化履历</option><option>价格目录</option></select></div>
         <div class="search-item"><label>字段编码：</label><input type="text" id="qCode" placeholder="模块:页面:字段"></div>
         <div class="search-item"><label>字段中文名：</label><input type="text" id="qName" placeholder="请输入中文名"></div>
         <div class="search-actions">
@@ -77,7 +77,7 @@
       <div class="form-row">
         <div class="form-item"><label><span class="req">*</span>页面：</label>
           <div class="field-col">
-            <select id="fPage"><option value="">请选择页面（系统页面字典）</option><option>成本分析-功能包及采购成本达成</option><option>成本分析-部门达成情况</option><option>成本分析-采购成本达成</option><option>成本分析-变化履历</option></select>
+            <select id="fPage"><option value="">请选择页面（系统页面字典）</option><option>成本分析-功能包及采购成本达成</option><option>成本分析-部门达成情况</option><option>成本分析-采购成本达成</option><option>成本分析-变化履历</option><option>价格目录</option></select>
             <div class="err">请选择页面</div>
           </div>
         </div>
@@ -132,7 +132,10 @@ var fields = [
   { page:'成本分析-采购成本达成',         code:'cost:purAchieve:actualCost',   name:'实际成本',    time:'2026-09-15 10:10' },
   { page:'成本分析-变化履历',             code:'cost:chgHistory:lastPrice',    name:'上次价格',    time:'2026-09-15 10:15' },
   { page:'成本分析-变化履历',             code:'cost:chgHistory:curPrice',     name:'本次价格',    time:'2026-09-15 10:15' },
-  { page:'成本分析-变化履历',             code:'cost:chgHistory:diffAmount',   name:'价差金额',    time:'2026-09-15 10:15' }
+  { page:'成本分析-变化履历',             code:'cost:chgHistory:diffAmount',   name:'价差金额',    time:'2026-09-15 10:15' },
+  { page:'价格目录',                       code:'price:catalog:supplierName',   name:'供应商名称',  time:'2026-09-21 09:00' },
+  { page:'价格目录',                       code:'price:catalog:buyer',          name:'采购员',      time:'2026-09-21 09:00' },
+  { page:'价格目录',                       code:'price:catalog:dept',           name:'科室',        time:'2026-09-21 09:00' }
 ];
 var filtered = fields.slice();
 var curPage=1, pageSize=15, editIdx=-1;
