@@ -28,7 +28,7 @@
   <div class="panel" style="flex:1;display:flex;flex-direction:column;min-height:0;border:none;border-radius:0;">
     <div class="search-area" id="searchArea">
       <div class="search-form">
-        <div class="search-item"><label>项目代号：</label><input type="text" id="qProj" placeholder="请输入项目代号"></div>
+        <div class="search-item"><label>车型编码：</label><input type="text" id="qProj" placeholder="请输入车型编码"></div>
         <div class="search-item"><label>车型：</label><input type="text" id="qModel" placeholder="请输入车型"></div>
         <div class="search-item"><label>品牌：</label>
           <select id="qBrand"><option value="">全部</option><option>传祺</option><option>埃安</option><option>昊铂</option></select></div>
@@ -74,29 +74,30 @@ GpmLayout.init({
   activeTab: 'carModelProject'
 });
 
-/* Mock：项目 + 零件（来源标记）；mclass＝车型分类、buyType＝采购类型，
-   两者与车型名称 / 车型编码 / 车型状态一并为【车型·零件关系】列表的取数字段 */
+/* Mock：项目 + 零件（来源标记）；mclass＝车型分类（枚举：国内燃油车 / 海外车）、
+   buyType＝采购类型（零件类型代码 W / AW / Z），与车型名称 / 车型编码 / 车型状态 / 品牌
+   一并为【车型·零件关系】列表的取数字段 */
 var projects = [
-  { code:'PRJ-AY2025', model:'AION Y', brand:'埃安', mclass:'SUV', pl:'张少伟', status:'量产', mtoc:'MTOC-AY-01',
+  { code:'AY3', model:'AION Y', brand:'埃安', mclass:'海外车', pl:'张少伟', status:'量产', mtoc:'MTOC-AY-01',
     parts:[
-      { no:'MTOC-A1001', name:'前门内饰板', buyType:'生产采购', fp:'内外饰功能包', eng:'刘德', buyer:'孙倩', src:'EBOM' },
-      { no:'MTOC-A1002', name:'后门内饰板', buyType:'生产采购', fp:'内外饰功能包', eng:'刘德', buyer:'孙倩', src:'EBOM' },
-      { no:'MTOC-A2001', name:'仪表板总成', buyType:'生产采购', fp:'座舱功能包', eng:'陈静', buyer:'孙倩', src:'MTOC' },
-      { no:'MTOC-A3001', name:'座椅骨架', buyType:'生产采购', fp:'座椅功能包', eng:'冯华', buyer:'周敏', src:'MANUAL' }
+      { no:'MTOC-A1001', name:'前门内饰板', buyType:'AW', fp:'内外饰功能包', eng:'刘德', buyer:'孙倩', src:'EBOM' },
+      { no:'MTOC-A1002', name:'后门内饰板', buyType:'AW', fp:'内外饰功能包', eng:'刘德', buyer:'孙倩', src:'EBOM' },
+      { no:'MTOC-A2001', name:'仪表板总成', buyType:'W', fp:'座舱功能包', eng:'陈静', buyer:'孙倩', src:'MTOC' },
+      { no:'MTOC-A3001', name:'座椅骨架', buyType:'AW', fp:'座椅功能包', eng:'冯华', buyer:'周敏', src:'MANUAL' }
     ]},
-  { code:'PRJ-AS2026', model:'AION S Plus', brand:'埃安', mclass:'轿车', pl:'陈静', status:'新车型', mtoc:'MTOC-AS-02',
+  { code:'AS1', model:'AION S Plus', brand:'埃安', mclass:'海外车', pl:'陈静', status:'新车型', mtoc:'MTOC-AS-02',
     parts:[
-      { no:'MTOC-B1001', name:'前保险杠', buyType:'生产采购', fp:'外饰功能包', eng:'陈静', buyer:'孙倩', src:'EBOM' },
-      { no:'MTOC-B2001', name:'中控显示屏', buyType:'非生产采购', fp:'智联功能包', eng:'吴刚', buyer:'孙倩', src:'MTOC' }
+      { no:'MTOC-B1001', name:'前保险杠', buyType:'AW', fp:'外饰功能包', eng:'陈静', buyer:'孙倩', src:'EBOM' },
+      { no:'MTOC-B2001', name:'中控显示屏', buyType:'W', fp:'智联功能包', eng:'吴刚', buyer:'孙倩', src:'MTOC' }
     ]},
-  { code:'PRJ-M8-2024', model:'传祺M8', brand:'传祺', mclass:'MPV', pl:'王慧芬', status:'量产', mtoc:'MTOC-M8-01',
+  { code:'A88', model:'传祺M8', brand:'传祺', mclass:'国内燃油车', pl:'王慧芬', status:'量产', mtoc:'MTOC-M8-01',
     parts:[
-      { no:'MTOC-C1001', name:'侧滑门总成', buyType:'生产采购', fp:'车身功能包', eng:'冯华', buyer:'周敏', src:'EBOM' },
-      { no:'MTOC-C2001', name:'第三排座椅', buyType:'生产采购', fp:'座椅功能包', eng:'冯华', buyer:'周敏', src:'EBOM' }
+      { no:'MTOC-C1001', name:'侧滑门总成', buyType:'AW', fp:'车身功能包', eng:'冯华', buyer:'周敏', src:'EBOM' },
+      { no:'MTOC-C2001', name:'第三排座椅', buyType:'W', fp:'座椅功能包', eng:'冯华', buyer:'周敏', src:'EBOM' }
     ]},
-  { code:'PRJ-HGT-2026', model:'昊铂GT', brand:'昊铂', mclass:'轿车', pl:'赵磊', status:'在研', mtoc:'MTOC-HGT-01',
+  { code:'A66', model:'昊铂GT', brand:'昊铂', mclass:'海外车', pl:'赵磊', status:'在研', mtoc:'MTOC-HGT-01',
     parts:[
-      { no:'MTOC-D1001', name:'激光雷达支架', buyType:'生产采购', fp:'智联功能包', eng:'赵磊', buyer:'孙倩', src:'MANUAL' }
+      { no:'MTOC-D1001', name:'激光雷达支架', buyType:'Z', fp:'智联功能包', eng:'赵磊', buyer:'孙倩', src:'MANUAL' }
     ]}
 ];
 var filtered = projects.slice();

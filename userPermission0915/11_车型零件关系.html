@@ -62,6 +62,7 @@
           <th style="width:130px;">车型编码</th>
           <th style="width:90px;">车型分类</th>
           <th style="width:90px;">车型状态</th>
+          <th style="width:80px;">品牌</th>
           <th style="min-width:130px;">零件编号</th>
           <th style="min-width:150px;">零件名称</th>
           <th style="width:110px;">采购类型</th>
@@ -75,7 +76,7 @@
     </div>
 
     <div class="pagination-bar">
-      <span class="muted">来源优先级：自动源（IBOM / 埃安GBOM / GBM-BOM / PMS）<b>&gt;</b> 人工补录；自动源行<b>只读</b>，人工补录行可编辑 / 删除。<b>系统不判定缺件</b>，本页不提供缺失清单与覆盖率指标。</span>
+      <span class="muted">车型级字段（车型名称 / 车型编码 / 车型分类 / 车型状态 / 品牌）与零件级字段（零件编号 / 零件名称 / 采购类型）均取自【车型项目管理】；<b>车型分类</b>枚举：国内燃油车 / 海外车；<b>采购类型</b>为零件类型代码（W / AW / Z 等）。来源优先级：自动源（IBOM / 埃安GBOM / GBM-BOM / PMS）<b>&gt;</b> 人工补录；自动源行<b>只读</b>，人工补录行可编辑 / 删除。<b>系统不判定缺件</b>，本页不提供缺失清单与覆盖率指标。</span>
     </div>
   </div>
 </div>
@@ -143,17 +144,17 @@ GpmLayout.init({
    车型级字段（车型名称 / 车型编码 / 车型分类 / 车型状态）与零件级字段（零件编号 / 零件名称 / 采购类型）
    均取自【车型项目管理】的零件 Tab；brand 仅用于筛选，不在列表展示。 */
 var rels = [
-  { model:'AION Y',      mcode:'PRJ-AY2025',   mclass:'SUV', status:'量产',   brand:'埃安', part:'MTOC-A1001', name:'前门内饰板',  buyType:'生产采购',   src:'埃安GBOM', by:'系统',   time:'2026-09-20 02:10' },
-  { model:'AION Y',      mcode:'PRJ-AY2025',   mclass:'SUV', status:'量产',   brand:'埃安', part:'MTOC-A2001', name:'仪表板总成',  buyType:'生产采购',   src:'IBOM',     by:'系统',   time:'2026-09-20 02:10' },
-  { model:'AION Y',      mcode:'PRJ-AY2025',   mclass:'SUV', status:'量产',   brand:'埃安', part:'MTOC-A3001', name:'座椅骨架',    buyType:'生产采购',   src:'人工补录', by:'孙倩',   time:'2026-09-21 14:02' },
-  { model:'AION V',      mcode:'PRJ-AV2025',   mclass:'SUV', status:'量产',   brand:'埃安', part:'MTOC-E1001', name:'电池包上盖',  buyType:'生产采购',   src:'IBOM',     by:'系统',   time:'2026-09-20 02:10' },
-  { model:'AION S Plus', mcode:'PRJ-AS2026',   mclass:'轿车', status:'新车型', brand:'埃安', part:'MTOC-B1001', name:'前保险杠',    buyType:'生产采购',   src:'PMS',      by:'系统',   time:'2026-09-18 03:00' },
-  { model:'AION S Plus', mcode:'PRJ-AS2026',   mclass:'轿车', status:'新车型', brand:'埃安', part:'MTOC-B2001', name:'中控显示屏',  buyType:'非生产采购', src:'PMS',      by:'系统',   time:'2026-09-18 03:00' },
-  { model:'传祺M8',      mcode:'PRJ-M8-2024',  mclass:'MPV', status:'量产',   brand:'传祺', part:'MTOC-A1001', name:'前门内饰板',  buyType:'生产采购',   src:'GBM-BOM',  by:'系统',   time:'2026-09-19 01:30' },
-  { model:'传祺M8',      mcode:'PRJ-M8-2024',  mclass:'MPV', status:'量产',   brand:'传祺', part:'MTOC-C2001', name:'第三排座椅',  buyType:'生产采购',   src:'GBM-BOM',  by:'系统',   time:'2026-09-19 01:30' },
-  { model:'传祺GS8',     mcode:'PRJ-GS8-2026', mclass:'SUV', status:'量产',   brand:'传祺', part:'MTOC-G1001', name:'中控显示屏',  buyType:'生产采购',   src:'人工补录', by:'冷丹丹', time:'2026-09-21 15:20' },
-  { model:'昊铂HT',      mcode:'PRJ-HT2025',   mclass:'SUV', status:'量产',   brand:'昊铂', part:'MTOC-F1001', name:'电动尾门',    buyType:'生产采购',   src:'人工补录', by:'周敏',   time:'2026-09-19 10:30' },
-  { model:'昊铂GT',      mcode:'PRJ-HGT-2026', mclass:'轿车', status:'在研',   brand:'昊铂', part:'MTOC-D1001', name:'激光雷达支架', buyType:'生产采购',   src:'人工补录', by:'赵磊',   time:'2026-09-22 09:10' }
+  { model:'AION Y',      mcode:'AY3',    mclass:'海外车',     status:'量产',   brand:'埃安', part:'MTOC-A1001', name:'前门内饰板',  buyType:'AW', src:'埃安GBOM', by:'系统',   time:'2026-09-20 02:10' },
+  { model:'AION Y',      mcode:'AY3',    mclass:'海外车',     status:'量产',   brand:'埃安', part:'MTOC-A2001', name:'仪表板总成',  buyType:'W',  src:'IBOM',     by:'系统',   time:'2026-09-20 02:10' },
+  { model:'AION Y',      mcode:'AY3',    mclass:'海外车',     status:'量产',   brand:'埃安', part:'MTOC-A3001', name:'座椅骨架',    buyType:'AW', src:'人工补录', by:'孙倩',   time:'2026-09-21 14:02' },
+  { model:'AION V',      mcode:'AV1',    mclass:'海外车',     status:'量产',   brand:'埃安', part:'MTOC-E1001', name:'电池包上盖',  buyType:'W',  src:'IBOM',     by:'系统',   time:'2026-09-20 02:10' },
+  { model:'AION S Plus', mcode:'AS1',    mclass:'海外车',     status:'新车型', brand:'埃安', part:'MTOC-B1001', name:'前保险杠',    buyType:'AW', src:'PMS',      by:'系统',   time:'2026-09-18 03:00' },
+  { model:'AION S Plus', mcode:'AS1',    mclass:'海外车',     status:'新车型', brand:'埃安', part:'MTOC-B2001', name:'中控显示屏',  buyType:'W',  src:'PMS',      by:'系统',   time:'2026-09-18 03:00' },
+  { model:'传祺M8',      mcode:'A88',    mclass:'国内燃油车', status:'量产',   brand:'传祺', part:'MTOC-A1001', name:'前门内饰板',  buyType:'AW', src:'GBM-BOM',  by:'系统',   time:'2026-09-19 01:30' },
+  { model:'传祺M8',      mcode:'A88',    mclass:'国内燃油车', status:'量产',   brand:'传祺', part:'MTOC-C2001', name:'第三排座椅',  buyType:'W',  src:'GBM-BOM',  by:'系统',   time:'2026-09-19 01:30' },
+  { model:'传祺GS8',     mcode:'A30-I',  mclass:'国内燃油车', status:'量产',   brand:'传祺', part:'MTOC-G1001', name:'中控显示屏',  buyType:'W',  src:'人工补录', by:'冷丹丹', time:'2026-09-21 15:20' },
+  { model:'昊铂HT',      mcode:'AH8',    mclass:'海外车',     status:'量产',   brand:'昊铂', part:'MTOC-F1001', name:'电动尾门',    buyType:'Z',  src:'人工补录', by:'周敏',   time:'2026-09-19 10:30' },
+  { model:'昊铂GT',      mcode:'A66',    mclass:'海外车',     status:'在研',   brand:'昊铂', part:'MTOC-D1001', name:'激光雷达支架', buyType:'Z',  src:'人工补录', by:'赵磊',   time:'2026-09-22 09:10' }
 ];
 
 var SRC_TAG = {
@@ -192,7 +193,7 @@ function resetSearch(){
 function render(){
   var tb=document.getElementById('tbody'); tb.innerHTML='';
   if(!filtered.length){
-    tb.innerHTML='<tr><td colspan="11" style="text-align:center;color:#909399;padding:32px 0;">暂无数据</td></tr>';
+    tb.innerHTML='<tr><td colspan="12" style="text-align:center;color:#909399;padding:32px 0;">暂无数据</td></tr>';
     document.getElementById('totalText').innerText = 0;
     return;
   }
@@ -206,6 +207,7 @@ function render(){
       '<td class="mono">'+r.mcode+'</td>'+
       '<td>'+r.mclass+'</td>'+
       '<td>'+stTag(r.status)+'</td>'+
+      '<td>'+r.brand+'</td>'+
       '<td class="text-left mono">'+r.part+(isShared(r.part)?' <span class="tag share-badge">共用件</span>':'')+'</td>'+
       '<td class="text-left">'+r.name+'</td>'+
       '<td>'+(r.buyType||'<span class="muted">—</span>')+'</td>'+
