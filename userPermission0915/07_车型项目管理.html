@@ -43,19 +43,20 @@
 
     <div class="alert alert-info" style="margin:12px 16px 0;">
       <span class="ico">ⓘ</span>
-      <div><b>本页作为「车型 ↔ 零件」关系数据来源</b>（不再另建"车型-零件管控独立页"）。<b>数据源</b>：IBOM / 埃安 GBOM 自带车型关系直连；传祺 GBM 无车型-零件直接关系——优先取接口，无接口则走 <b>BOM 离线物化</b>（批处理写入【车型↔零件】关系表），页面只读、<b>不做实时下钻</b>。<b>关系维护</b>：采购兜底；来源优先级 <b>自动源（EBOM/MTOC）&gt; 人工补录</b>（人工只补缺口、不覆盖自动源），带来源+更新人+更新时间留痕。点击项目可展开查看其下零件清单。</div>
+      <div><b>本页定位：车型 / 项目的「项目级主数据 + 人员 / 品牌关系」</b>（车型项目、MTOC、PL 人员、品牌、项目状态），<b>不再是「车型 ↔ 零件」关系的唯一来源</b>。<br><b>零件级「车型 ↔ 零件」关系已独立到【车型·零件关系】页维护</b>——含数据源（量产车型 IBOM / 埃安 GBOM 直连、传祺 GBM 通过 BOM 接入、新车型通过 PMS 接入）与<b>采购兜底补齐</b>。本页下方零件清单仅作<b>只读预览</b>，维护入口见新页。</div>
     </div>
 
     <div class="table-toolbar">
       <button class="btn btn-primary" onclick="tip('新增车型项目')">新增</button>
       <button class="btn btn-default" onclick="doExport()">导出</button>
+      <button class="btn btn-default" onclick="location.href='11_车型零件关系.html'">车型·零件关系维护</button>
       <div class="right"><span class="toolbar-note">共 <b id="totalText">0</b> 个项目</span></div>
     </div>
 
     <div class="table-wrap" style="flex:1;overflow:auto;min-height:0;" id="projList"></div>
 
     <div class="pagination-bar">
-      <span class="muted">展开项目可查看「车型↔零件」对应关系（供数据权限 Provider 取数）。</span>
+      <span class="muted">展开项目可查看该项目下的零件清单（只读预览，供数据权限 Provider 取数）；零件级关系的维护与兜底补齐见【车型·零件关系】页。</span>
     </div>
   </div>
 </div>

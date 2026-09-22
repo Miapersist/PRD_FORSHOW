@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>登录信息（登录痕迹页）- GPM系统</title>
+<title>用户登录统计 - GPM系统</title>
 <link rel="stylesheet" href="_common/gpm.css">
 <style>
   .export-dl{ color:#1869e1; cursor:pointer; }
@@ -16,12 +16,12 @@
   <div class="panel" style="flex:1;display:flex;flex-direction:column;min-height:0;border:none;border-radius:0;">
 
     <div class="inner-tabs">
-      <div class="tab-btn active" data-view="all" onclick="switchView('all',this)">登录信息<span class="new-col-badge">改造</span><span class="muted">（对采购开放）</span></div>
+      <div class="tab-btn active" data-view="all" onclick="switchView('all',this)">用户登录统计<span class="new-col-badge">改造</span><span class="muted">（对采购开放）</span></div>
     </div>
 
     <div class="alert alert-info" style="margin:12px 16px 0;">
       <span class="ico">ⓘ</span>
-      <div><b>复用现有登录痕迹页，不新建页面</b>——登录信息是<b>用户维度</b>的登录统计，与导出中心的<b>文件维度</b>导出记录不是同一场景，故独立于导出中心。<br>本次改造 3 项：<b>① 对采购开放查看</b>（数据权限约束为仅采购 / 领导可见）；<b>② 新增「导出」按钮</b>（导出当前查询结果，替代人工到后台捞数）；<b>③ 查询条件补「起始 / 结束时间」</b>（支持"25 年至今 / 26 年至今"，因 25 年合并）。<br>数据来源：<code>scc_log_user_trace</code>（<code>LOGIN_NUM</code> 登录次数、<code>CUMULATIVE_ONLINE_TIME</code> 累计在线时间）；明细 <code>/api-rbac/traceinfo/listPage</code>。</div>
+      <div><b>复用现有系统页面【用户登录统计】，不新建页面</b>——用户登录统计是<b>用户维度</b>的登录统计，与导出中心的<b>文件维度</b>导出记录不是同一场景，故独立于导出中心。<br>本次改造 3 项：<b>① 对采购开放查看</b>（数据权限约束为仅采购 / 领导可见）；<b>② 新增「导出」按钮</b>（导出当前查询结果，替代人工到后台捞数）；<b>③ 查询条件补「起始 / 结束时间」</b>（支持"25 年至今 / 26 年至今"，因 25 年合并）。<br>数据来源：<code>scc_log_user_trace</code>（<code>LOGIN_NUM</code> 累计登录次数、<code>CUMULATIVE_ONLINE_TIME</code> 累计在线时间）；明细 <code>/api-rbac/traceinfo/listPage</code>。</div>
     </div>
 
     <div class="search-area" id="searchArea">
@@ -72,16 +72,16 @@
 <script src="_common/gpm-layout.js"></script>
 <script>
 GpmLayout.init({
-  activePage: 'loginTrace',
-  breadcrumb: ['首页', '系统管理', '登录信息'],
+  activePage: 'userLoginStat',
+  breadcrumb: ['首页', '系统管理', '用户登录统计'],
   tabs: [
     { key:'home', label:'首页', closable:false },
-    { key:'loginTrace', label:'登录信息' }
+    { key:'userLoginStat', label:'用户登录统计' }
   ],
-  activeTab: 'loginTrace'
+  activeTab: 'userLoginStat'
 });
 
-/* mock：登录痕迹汇总（区间：2026-01-01 ~ 2026-09-22） */
+/* mock：用户登录统计汇总（区间：2026-01-01 ~ 2026-09-22） */
 var rows = [
   { user:'冷丹丹', emp:'00130778', dept:'采购部',     count:326, online:'612 小时', last:'2026-09-22 08:41', me:true },
   { user:'孙倩',   emp:'00180123', dept:'采购部',     count:210, online:'398 小时', last:'2026-09-20 16:38' },

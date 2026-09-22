@@ -22,6 +22,7 @@ var GpmLayout = (function () {
       { label: '敏感字段元数据维护', key: 'fieldMetadata', page: '05_字段元数据维护.html' },
       { label: '统一统筹页', key: 'unifiedScope', page: '06_统一统筹页.html' },
       { label: '导出中心', key: 'exportCenter', page: '09_导出中心.html' },
+      { label: '用户登录统计', key: 'userLoginStat', page: '10_用户登录统计.html' },
       { label: '功能维护' },
       { label: '菜单维护' }
     ]},
@@ -31,6 +32,7 @@ var GpmLayout = (function () {
     ]},
     { group: '业务模块' },
     { label: '车型项目管理', key: 'carModelProject', page: '07_车型项目管理.html' },
+    { label: '车型·零件关系', key: 'carPartRel', page: '11_车型零件关系.html' },
     { label: '零件认领' },
     { label: '成本分析报表', key: 'costReport', page: '08_成本分析报表.html' },
     { label: '价格管理' },

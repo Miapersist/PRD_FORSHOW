@@ -84,11 +84,17 @@
       <div class="c-desc">在导出中心上新增「<b>个人 / 全量</b>」视图切换；<b>全量视图</b>增「导出人 / 工号 / 研发部门 / <b>最后登录时间</b>」列与筛选，<b>仅采购可见</b>。<b>登录信息不再挂在本页</b>（已独立到【登录痕迹页】）。</div>
       <div class="c-tags"><span class="tag type-new">个人/全量视图</span><span class="tag type-new">导出人/工号/研发部门</span><span class="tag type-new">最后登录时间</span><span class="tag type-new">仅采购可见</span></div>
     </div>
-    <div class="card" onclick="go('10_登录信息.html')">
-      <div class="c-title">登录信息（登录痕迹页）<span class="tag type-new">改造</span></div>
-      <div class="c-file">10_登录信息.html</div>
-      <div class="c-desc"><b>复用现有登录痕迹页，不新建页面</b>（用户维度 ≠ 文件维度）。改造 3 项：<b>对采购开放查看</b>、<b>新增「导出」</b>（导出当前查询结果，替代人工后台捞数）、<b>补「起始 / 结束时间」查询</b>（25 年合并，要按区间/年度取）。数据源 <code>scc_log_user_trace</code>（<code>LOGIN_NUM</code> / <code>CUMULATIVE_ONLINE_TIME</code>），明细 <code>/api-rbac/traceinfo/listPage</code>。</div>
+    <div class="card" onclick="go('10_用户登录统计.html')">
+      <div class="c-title">用户登录统计<span class="tag type-new">改造</span></div>
+      <div class="c-file">10_用户登录统计.html</div>
+      <div class="c-desc"><b>复用现有系统页面【用户登录统计】，不新建页面</b>（用户维度 ≠ 文件维度）。改造 3 项：<b>对采购开放查看</b>、<b>新增「导出」</b>（导出当前查询结果，替代人工后台捞数）、<b>补「起始 / 结束时间」查询</b>（25 年合并，要按区间/年度取）。数据源 <code>scc_log_user_trace</code>（<code>LOGIN_NUM</code> / <code>CUMULATIVE_ONLINE_TIME</code>），明细 <code>/api-rbac/traceinfo/listPage</code>。</div>
       <div class="c-tags"><span class="tag type-new">复用现有页</span><span class="tag type-new">对采购开放</span><span class="tag type-new">新增导出</span><span class="tag type-new">时间区间</span></div>
+    </div>
+    <div class="card" onclick="go('11_车型零件关系.html')">
+      <div class="c-title">车型·零件关系<span class="tag type-new">新增</span></div>
+      <div class="c-file">11_车型零件关系.html</div>
+      <div class="c-desc">「车型 ↔ 零件」关系<b>独立维护页</b>。<b>数据源</b>：量产车型 → <b>IBOM / 埃安 GBOM 直连</b>；传祺 GBM → <b>通过 BOM 接入</b>；新车型 → <b>通过 PMS 接入</b>。<b>维护：采购兜底补齐</b>，来源优先级 自动源 &gt; 人工补录（只补缺口、不覆盖自动源），带来源 / 更新人 / 更新时间留痕；含覆盖率与缺失清单。</div>
+      <div class="c-tags"><span class="tag type-new">独立维护页</span><span class="tag type-new">IBOM/GBOM/GBM/PMS</span><span class="tag type-new">采购兜底</span><span class="tag type-new">共用件 M:N</span></div>
     </div>
   </div>
 
@@ -122,7 +128,8 @@
       <tr><td>人员↔对象统一统筹（含领域采购Tab）</td><td>06_统一统筹页</td><td>新增</td><td>3个Tab + 多选弹窗 + 上游同步只读</td></tr>
       <tr><td>用户权限新增上级领导/上上级领导（部长/本部长）</td><td>01_用户权限</td><td>改造</td><td>IAM 下发的组织层级字段（列表+编辑页只读）</td></tr>
       <tr><td>导出中心新增「全量」视图（导出人/工号/研发部门/最后登录时间，仅采购可见）</td><td>09_导出中心</td><td>新增</td><td>个人/全量切换 + 最后登录时间列</td></tr>
-      <tr><td>登录信息（复用现有登录痕迹页：开放采购 + 新增导出 + 时间区间）</td><td>10_登录信息</td><td>改造</td><td>不新建页面；用户维度统计</td></tr>
+      <tr><td>用户登录统计（复用现有系统页面：开放采购 + 新增导出 + 时间区间）</td><td>10_用户登录统计</td><td>改造</td><td>不新建页面；用户维度统计</td></tr>
+      <tr><td>车型·零件关系（数据源三路 + 采购兜底补齐，原 V5.2 取消独立页已反转）</td><td>11_车型零件关系</td><td>新增</td><td>独立维护页；来源优先级 自动源&gt;人工补录</td></tr>
       <tr><td>车型↔零件关系来源（不建独立页）</td><td>07_车型项目管理</td><td>改造</td><td>项目列表 + 展开零件BOM</td></tr>
       <tr><td>报表仅看发布数据 + 按报表列过滤 + 脱敏</td><td>08_成本分析报表</td><td>改造</td><td>三类角色切换演示数据范围与脱敏</td></tr>
     </tbody>

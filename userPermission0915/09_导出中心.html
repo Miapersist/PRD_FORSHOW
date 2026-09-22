@@ -24,7 +24,7 @@
 
     <div class="alert alert-info" style="margin:12px 16px 0;">
       <span class="ico">ⓘ</span>
-      <div>导出中心展示系统内的导出文件。<b>个人视图</b>＝仅当前登录人的导出记录；<b>全量视图</b>＝展示全量导出记录（含 <b>导出人 / 工号 / 研发部门 / 最后登录时间</b>），<b>仅采购可见</b>（由数据权限约束）。下载按 <b>fileuploadId</b> 取件。<br><b>「最后登录时间」列</b>取值同【登录痕迹页】（<code>scc_log_user_trace</code> 最近一次 <code>loginDate</code>）；<b>累计登录次数 / 时间区间查询与导出</b>已独立到【登录痕迹页】（详见 <b>10_登录信息</b>），本页不再挂入口。</div>
+      <div>导出中心展示系统内的导出文件。<b>个人视图</b>＝仅当前登录人的导出记录；<b>全量视图</b>＝展示全量导出记录（含 <b>导出人 / 工号 / 研发部门 / 最后登录时间</b>），<b>仅采购可见</b>（由数据权限约束）。下载按 <b>fileuploadId</b> 取件。<br><b>「最后登录时间」列</b>取值同【用户登录统计】（<code>scc_log_user_trace</code> 最近一次 <code>loginDate</code>）；<b>累计登录次数 / 时间区间查询与导出</b>已独立到【用户登录统计】（详见 <b>10_用户登录统计</b>），本页不再挂入口。</div>
     </div>
 
     <div class="search-area" id="searchArea">
@@ -42,7 +42,7 @@
     </div>
 
     <div class="table-toolbar">
-      <div class="left"><span class="toolbar-note">登录信息（累计登录次数 / 最后登录时间）已独立到【登录痕迹页】，本页不再挂入口，仅保留「最后登录时间」列。</span></div>
+      <div class="left"><span class="toolbar-note">用户登录统计（累计登录次数 / 最后登录时间）已独立到【用户登录统计】页，本页不再挂入口，仅保留「最后登录时间」列。</span></div>
       <div class="right"><span class="toolbar-note">共 <b id="totalText">0</b> 个文件</span></div>
     </div>
 
