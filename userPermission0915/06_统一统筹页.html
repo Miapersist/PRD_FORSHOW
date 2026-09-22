@@ -22,7 +22,7 @@
     <!-- 页内 Tab -->
     <div class="inner-tabs">
       <div class="tab-btn active" data-tab="car" onclick="switchTab('car',this)">车型<span class="muted">（人员↔车型）</span></div>
-      <div class="tab-btn" data-tab="brand" onclick="switchTab('brand',this)">品牌&海内外<span class="muted">（人员↔品牌×海内外）</span></div>
+      <div class="tab-btn" data-tab="brand" onclick="switchTab('brand',this)">品牌&国际/国内<span class="muted">（人员↔品牌×国际/国内）</span></div>
       <div class="tab-btn" data-tab="domainBuy" onclick="switchTab('domainBuy',this)">领域（采购）<span class="new-col-badge">新</span></div>
     </div>
 
@@ -154,12 +154,12 @@ var TAB_CONF = {
                  {code:'HBTGT',   name:'昊铂GT'}, {code:'TRM8',     name:'传祺M8'},
                  {code:'TRGS8',   name:'传祺GS8'}, {code:'YB',      name:'影豹'}, {code:'AIONV', name:'AION V'}],
                tagCls:'tag-blue', pickTitle:'选择可见车型（来源：车型项目管理·车型项目基础信息列表）' },
-  brand:     { objLabel:'品牌×海内外：',     colHead:'可见品牌×海内外组合',   dict:[
-                 {code:'TR-DOM', name:'传祺-国内'}, {code:'TR-OVS', name:'传祺-海外'},
-                 {code:'AN-DOM', name:'埃安-国内'}, {code:'AN-OVS', name:'埃安-海外'},
-                 {code:'QJ-DOM', name:'启境-国内'}, {code:'QJ-OVS', name:'启境-海外'},
-                 {code:'HB-DOM', name:'昊铂-国内'}, {code:'HB-OVS', name:'昊铂-海外'}],
-               tagCls:'tag-green', pickTitle:'选择品牌×海内外（来源：字典 BRAND_HOME_ABROAD，固定 8 项）' },
+  brand:     { objLabel:'品牌×国际/国内：',     colHead:'可见品牌×国际/国内组合',   dict:[
+                {code:'TR-DOM', name:'传祺-国内'}, {code:'TR-INT', name:'传祺-国际'},
+                {code:'AN-DOM', name:'埃安-国内'}, {code:'AN-INT', name:'埃安-国际'},
+                {code:'QJ-DOM', name:'启境-国内'}, {code:'QJ-INT', name:'启境-国际'},
+                {code:'HB-DOM', name:'昊铂-国内'}, {code:'HB-INT', name:'昊铂-国际'}],
+              tagCls:'tag-green', pickTitle:'选择品牌×国际/国内（来源：字典 BRAND_HOME_ABROAD，固定 8 项）' },
   domainBuy: { objLabel:'领域（采购）：',     colHead:'可见领域（采购）集合', dict:[
                  {code:'NWS',  name:'内外饰'}, {code:'CS',  name:'车身'}, {code:'DP',  name:'底盘'},
                  {code:'ZL',   name:'智联'},   {code:'JCAQ',name:'集成安全'}, {code:'GY',  name:'工艺'},
@@ -179,7 +179,7 @@ var data = {
   ],
   brand: [
     { acc:'zhangsw', name:'张少伟', role:'成本管理员', objs:['传祺-国内','埃安-国内'], src:'人工新增/导入', time:'2026-08-05', readonly:false },
-    { acc:'wanghf',  name:'王慧芬', role:'成本经理',   objs:['传祺-国内','传祺-海外','埃安-国内','埃安-海外'], src:'人工新增/导入', time:'2026-08-01', readonly:false }
+    { acc:'wanghf',  name:'王慧芬', role:'成本经理',   objs:['传祺-国内','传祺-国际','埃安-国内','埃安-国际'], src:'人工新增/导入', time:'2026-08-01', readonly:false }
   ],
   domainBuy: [
     { acc:'wanghf',  name:'王慧芬', role:'成本经理',   objs:['内外饰','车身'], src:'人工新增/导入', time:'2026-09-15', readonly:false },

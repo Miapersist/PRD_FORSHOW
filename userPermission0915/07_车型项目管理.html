@@ -43,7 +43,7 @@
 
     <div class="alert alert-info" style="margin:12px 16px 0;">
       <span class="ico">ⓘ</span>
-      <div><b>本页定位：车型 / 项目的「项目级主数据 + 人员 / 品牌关系」</b>（车型项目、MTOC、PL 人员、品牌、项目状态），<b>不再是「车型 ↔ 零件」关系的唯一来源</b>。<br><b>零件级「车型 ↔ 零件」关系已独立到【车型·零件关系】页维护</b>——含数据源（量产车型 IBOM / 埃安 GBOM 直连、传祺 GBM 通过 BOM 接入、新车型通过 PMS 接入）与<b>采购兜底补齐</b>。本页下方零件清单仅作<b>只读预览</b>，维护入口见新页。</div>
+      <div><b>本页定位：车型 / 项目的「项目级主数据 + 人员 / 品牌关系」</b>（车型项目、MTOC、PL 人员、品牌、项目状态），<b>不再是「车型 ↔ 零件」关系的唯一来源</b>。<br><b>零件级「车型 ↔ 零件」关系已独立到【车型·零件关系】页维护</b>——含数据源（量产车型 IBOM / 埃安 GBOM 直连、传祺 GBM 通过 BOM 接入、新车型通过 PMS 接入）与<b>人工补录（直接新增零件关系）</b>。本页下方零件清单（零件 Tab）为<b>只读预览 + 字段来源</b>——其<b>车型编码 / 车型分类 / 采购类型</b>即【车型·零件关系】列表的取数字段。</div>
     </div>
 
     <div class="table-toolbar">
@@ -56,7 +56,7 @@
     <div class="table-wrap" style="flex:1;overflow:auto;min-height:0;" id="projList"></div>
 
     <div class="pagination-bar">
-      <span class="muted">展开项目可查看该项目下的零件清单（只读预览，供数据权限 Provider 取数）；零件级关系的维护与兜底补齐见【车型·零件关系】页。</span>
+      <span class="muted">展开项目可查看该项目下的零件清单（零件 Tab，只读预览，供数据权限 Provider 取数与字段来源）；零件级关系的维护与人工补录见【车型·零件关系】页。</span>
     </div>
   </div>
 </div>
@@ -74,28 +74,29 @@ GpmLayout.init({
   activeTab: 'carModelProject'
 });
 
-/* Mock：项目 + 零件（来源标记） */
+/* Mock：项目 + 零件（来源标记）；mclass＝车型分类、buyType＝采购类型，
+   两者与车型名称 / 车型编码 / 车型状态一并为【车型·零件关系】列表的取数字段 */
 var projects = [
-  { code:'PRJ-AY2025', model:'AION Y', brand:'埃安', pl:'张少伟', status:'量产', mtoc:'MTOC-AY-01',
+  { code:'PRJ-AY2025', model:'AION Y', brand:'埃安', mclass:'SUV', pl:'张少伟', status:'量产', mtoc:'MTOC-AY-01',
     parts:[
-      { no:'MTOC-A1001', name:'前门内饰板', fp:'内外饰功能包', eng:'刘德', buyer:'孙倩', src:'EBOM' },
-      { no:'MTOC-A1002', name:'后门内饰板', fp:'内外饰功能包', eng:'刘德', buyer:'孙倩', src:'EBOM' },
-      { no:'MTOC-A2001', name:'仪表板总成', fp:'座舱功能包', eng:'陈静', buyer:'孙倩', src:'MTOC' },
-      { no:'MTOC-A3001', name:'座椅骨架', fp:'座椅功能包', eng:'冯华', buyer:'周敏', src:'MANUAL' }
+      { no:'MTOC-A1001', name:'前门内饰板', buyType:'生产采购', fp:'内外饰功能包', eng:'刘德', buyer:'孙倩', src:'EBOM' },
+      { no:'MTOC-A1002', name:'后门内饰板', buyType:'生产采购', fp:'内外饰功能包', eng:'刘德', buyer:'孙倩', src:'EBOM' },
+      { no:'MTOC-A2001', name:'仪表板总成', buyType:'生产采购', fp:'座舱功能包', eng:'陈静', buyer:'孙倩', src:'MTOC' },
+      { no:'MTOC-A3001', name:'座椅骨架', buyType:'生产采购', fp:'座椅功能包', eng:'冯华', buyer:'周敏', src:'MANUAL' }
     ]},
-  { code:'PRJ-AS2026', model:'AION S Plus', brand:'埃安', pl:'陈静', status:'新车型', mtoc:'MTOC-AS-02',
+  { code:'PRJ-AS2026', model:'AION S Plus', brand:'埃安', mclass:'轿车', pl:'陈静', status:'新车型', mtoc:'MTOC-AS-02',
     parts:[
-      { no:'MTOC-B1001', name:'前保险杠', fp:'外饰功能包', eng:'陈静', buyer:'孙倩', src:'EBOM' },
-      { no:'MTOC-B2001', name:'中控显示屏', fp:'智联功能包', eng:'吴刚', buyer:'孙倩', src:'MTOC' }
+      { no:'MTOC-B1001', name:'前保险杠', buyType:'生产采购', fp:'外饰功能包', eng:'陈静', buyer:'孙倩', src:'EBOM' },
+      { no:'MTOC-B2001', name:'中控显示屏', buyType:'非生产采购', fp:'智联功能包', eng:'吴刚', buyer:'孙倩', src:'MTOC' }
     ]},
-  { code:'PRJ-M8-2024', model:'传祺M8', brand:'传祺', pl:'王慧芬', status:'量产', mtoc:'MTOC-M8-01',
+  { code:'PRJ-M8-2024', model:'传祺M8', brand:'传祺', mclass:'MPV', pl:'王慧芬', status:'量产', mtoc:'MTOC-M8-01',
     parts:[
-      { no:'MTOC-C1001', name:'侧滑门总成', fp:'车身功能包', eng:'冯华', buyer:'周敏', src:'EBOM' },
-      { no:'MTOC-C2001', name:'第三排座椅', fp:'座椅功能包', eng:'冯华', buyer:'周敏', src:'EBOM' }
+      { no:'MTOC-C1001', name:'侧滑门总成', buyType:'生产采购', fp:'车身功能包', eng:'冯华', buyer:'周敏', src:'EBOM' },
+      { no:'MTOC-C2001', name:'第三排座椅', buyType:'生产采购', fp:'座椅功能包', eng:'冯华', buyer:'周敏', src:'EBOM' }
     ]},
-  { code:'PRJ-HGT-2026', model:'昊铂GT', brand:'昊铂', pl:'赵磊', status:'在研', mtoc:'MTOC-HGT-01',
+  { code:'PRJ-HGT-2026', model:'昊铂GT', brand:'昊铂', mclass:'轿车', pl:'赵磊', status:'在研', mtoc:'MTOC-HGT-01',
     parts:[
-      { no:'MTOC-D1001', name:'激光雷达支架', fp:'智联功能包', eng:'赵磊', buyer:'孙倩', src:'MANUAL' }
+      { no:'MTOC-D1001', name:'激光雷达支架', buyType:'生产采购', fp:'智联功能包', eng:'赵磊', buyer:'孙倩', src:'MANUAL' }
     ]}
 ];
 var filtered = projects.slice();
@@ -110,12 +111,13 @@ function render(){
   filtered.forEach(function(p,idx){
     var card=document.createElement('div'); card.className='proj-card';
     var partsRows = p.parts.map(function(pt,i){
-      return '<tr><td>'+(i+1)+'</td><td style="font-family:monospace;">'+pt.no+'</td><td class="text-left">'+pt.name+'</td><td>'+pt.fp+'</td><td>'+pt.eng+'</td><td>'+pt.buyer+'</td><td>'+srcBadge(pt.src)+'</td></tr>';
+      return '<tr><td>'+(i+1)+'</td><td style="font-family:monospace;">'+pt.no+'</td><td class="text-left">'+pt.name+'</td><td>'+(pt.buyType||'—')+'</td><td>'+pt.fp+'</td><td>'+pt.eng+'</td><td>'+pt.buyer+'</td><td>'+srcBadge(pt.src)+'</td></tr>';
     }).join('');
     card.innerHTML =
       '<div class="proj-head" onclick="toggleProj(this)">'+
         '<span class="pname">'+p.model+'</span>'+
-        '<span class="meta">项目代号：'+p.code+'</span>'+
+        '<span class="meta">车型编码：'+p.code+'</span>'+
+        '<span class="meta">车型分类：'+p.mclass+'</span>'+
         '<span class="meta">品牌：'+p.brand+'</span>'+
         '<span class="meta">MTOC：'+p.mtoc+'</span>'+
         '<span class="meta">PL：'+p.pl+'</span>'+
@@ -125,7 +127,7 @@ function render(){
       '</div>'+
       '<div class="proj-body">'+
         '<table class="list-table" style="margin-top:12px;"><thead><tr>'+
-          '<th style="width:46px;">序号</th><th style="min-width:130px;">零件号</th><th style="min-width:150px;">零件名称</th><th style="min-width:120px;">功能包</th><th style="width:100px;">责任工程师</th><th style="width:100px;">采购员</th><th style="width:110px;">来源</th>'+
+          '<th style="width:46px;">序号</th><th style="min-width:130px;">零件编号</th><th style="min-width:150px;">零件名称</th><th style="width:110px;">采购类型</th><th style="min-width:120px;">功能包</th><th style="width:100px;">责任工程师</th><th style="width:100px;">采购员</th><th style="width:110px;">来源</th>'+
         '</tr></thead><tbody>'+partsRows+'</tbody></table>'+
       '</div>';
     box.appendChild(card);

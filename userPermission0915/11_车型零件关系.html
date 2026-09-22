@@ -7,10 +7,8 @@
 <link rel="stylesheet" href="_common/gpm.css">
 <style>
   .src-pms{ background:#f4ecfd; color:#7d4fd6; }
-  .kpi-strip{ display:flex; gap:28px; align-items:center; padding:12px 16px 0; }
-  .kpi-strip .kpi-lb{ color:#909399; font-size:12px; }
-  .kpi-strip .kpi-v{ font-size:16px; font-weight:600; color:#303133; }
   .share-badge{ background:#fdf6ec; color:#e6a23c; margin-left:4px; }
+  .mono{ font-family:Consolas, Monaco, "Courier New", monospace; }
 </style>
 </head>
 <body>
@@ -19,37 +17,30 @@
 <div class="page" style="padding:0;display:flex;flex-direction:column;overflow:hidden;">
   <div class="panel" style="flex:1;display:flex;flex-direction:column;min-height:0;border:none;border-radius:0;">
 
-    <div class="inner-tabs">
-      <div class="tab-btn active" data-tab="rel" onclick="switchTab('rel',this)">车型·零件关系<span class="muted">（全量）</span></div>
-      <div class="tab-btn" data-tab="miss" onclick="switchTab('miss',this)">缺失清单<span class="new-col-badge">兜底</span><span class="muted">（待人工补录）</span></div>
-    </div>
-
     <div class="alert alert-info" style="margin:12px 16px 0;">
       <span class="ico">ⓘ</span>
-      <div><b>本页为「车型 ↔ 零件」关系的独立维护页</b>（原 V5.2「不另建独立页、缺件由业务向上游补齐」已按业务要求<b>恢复为独立维护页</b>）。<b>数据源（按车型类型接入）</b>：<br>
+      <div><b>本页为「车型 ↔ 零件」关系的独立维护页</b>（原 V5.2「不另建独立页、由业务向上游传递补齐」已按业务要求<b>恢复为独立维护页</b>）。<b>数据源（按车型类型接入）</b>：<br>
       · <b>量产车型</b> → <span class="tag tag-blue">IBOM</span> / <span class="tag tag-green">埃安 GBOM</span> <b>直连</b>；<br>
       · <b>传祺 GBM</b> → <b>通过 BOM 接入</b>（批处理离线物化写入本关系表，页面只读、<b>不做实时下钻</b>）；<br>
       · <b>新车型</b> → <b>通过 PMS 接入</b>。<br>
-      <b>维护：采购兜底补齐</b>——来源优先级 <b>自动源（IBOM / 埃安GBOM / GBM-BOM / PMS）&gt; 人工补录</b>，人工<b>只补缺口、不覆盖自动源</b>；每条带 <b>来源 + 更新人 + 更新时间</b> 留痕。</div>
+      <b>维护方式</b>——来源优先级 <b>自动源（IBOM / 埃安GBOM / GBM-BOM / PMS）&gt; 人工补录</b>，自动源行<b>只读</b>，人工补录<b>直接新增零件关系</b>（<b>不覆盖自动源</b>，命中自动源则提示并阻断）；每条带 <b>来源 + 更新人 + 更新时间</b> 留痕。<b>本页不判定「缺件」</b>——不提供缺件筛选、缺失清单与覆盖率指标。</div>
     </div>
 
     <div class="alert alert-info" style="margin:12px 16px 0;">
       <span class="ico">ⓘ</span>
-      <div><b>共用件口径</b>：同一零件被多个车型共用时——<b>价格目录本体保持 1 条</b>（不复制、不拆行），<b>「1 件 → N 车型」只体现在本关系表（M:N）</b>；权限判定为「<b>命中任一车型即可见</b>」；分摊不落价格目录，交【成本 BOM】卷积（按各车型用量）。下表零件号后的 <span class="tag share-badge">共用件</span> 标记即为此类。</div>
+      <div><b>共用件口径</b>：同一零件被多个车型共用时——<b>价格目录本体保持 1 条</b>（不复制、不拆行），<b>「1 件 → N 车型」只体现在本关系表（M:N）</b>；权限判定为「<b>命中任一车型即可见</b>」；分摊不落价格目录，交【成本 BOM】卷积（按各车型用量）。下表零件编号后的 <span class="tag share-badge">共用件</span> 标记即为此类。</div>
     </div>
 
     <div class="search-area" id="searchArea">
       <div class="search-form">
-        <div class="search-item"><label>车型：</label><input type="text" id="qModel" placeholder="请输入车型"></div>
+        <div class="search-item"><label>车型名称：</label><input type="text" id="qModel" placeholder="请输入车型名称"></div>
         <div class="search-item"><label>品牌：</label>
           <select id="qBrand"><option value="">全部</option><option>传祺</option><option>埃安</option><option>昊铂</option><option>启境</option></select></div>
-        <div class="search-item"><label>项目状态：</label>
+        <div class="search-item"><label>车型状态：</label>
           <select id="qStatus"><option value="">全部</option><option>量产</option><option>新车型</option><option>在研</option></select></div>
         <div class="search-item"><label>来源：</label>
           <select id="qSrc"><option value="">全部</option><option>IBOM</option><option>埃安GBOM</option><option>GBM-BOM</option><option>PMS</option><option>人工补录</option></select></div>
-        <div class="search-item"><label>零件号：</label><input type="text" id="qPart" placeholder="请输入零件号 / 零件名称"></div>
-        <div class="search-item"><label>是否缺件：</label>
-          <select id="qMissing"><option value="">全部</option><option value="y">仅缺件</option><option value="n">仅已接入</option></select></div>
+        <div class="search-item"><label>零件编号：</label><input type="text" id="qPart" placeholder="请输入零件编号 / 零件名称"></div>
         <div class="search-actions">
           <button class="btn btn-primary" onclick="doSearch()">查询</button>
           <button class="btn btn-default" onclick="resetSearch()">重置</button>
@@ -61,31 +52,19 @@
       <button class="btn btn-primary" onclick="openEdit()">新增补录</button>
       <button class="btn btn-default" onclick="doImport()">导入</button>
       <button class="btn btn-default" onclick="doExport()">导出</button>
-      <div class="right"><span class="toolbar-note">共 <b id="totalText">0</b> 条关系 ｜ 覆盖率 <b id="coverRate">—</b></span></div>
-    </div>
-
-    <div class="kpi-strip">
-      <div><span class="kpi-lb">已接入零件关系</span> <span class="kpi-v" id="kpiRel">0</span> <span class="kpi-lb">条</span></div>
-      <div><span class="kpi-lb">缺件（待补录）</span> <span class="kpi-v" id="kpiMiss" style="color:#f56c6c;">0</span> <span class="kpi-lb">条</span></div>
-      <div><span class="kpi-lb">来源分布</span>
-        <span class="tag tag-blue">IBOM <b id="cIbom">0</b></span>
-        <span class="tag tag-green">埃安GBOM <b id="cGbom">0</b></span>
-        <span class="tag tag-orange">GBM-BOM <b id="cGbm">0</b></span>
-        <span class="tag src-pms">PMS <b id="cPms">0</b></span>
-        <span class="tag tag-gray">人工补录 <b id="cManual">0</b></span>
-      </div>
-      <div><span class="kpi-lb">（演示数据）</span></div>
+      <div class="right"><span class="toolbar-note">共 <b id="totalText">0</b> 条关系</span></div>
     </div>
 
     <div class="table-wrap" id="viewRel" style="flex:1;overflow:auto;min-height:0;">
       <table class="list-table">
         <thead><tr>
-          <th style="width:46px;">序号</th>
-          <th style="min-width:120px;">车型</th>
-          <th style="width:130px;">项目</th>
-          <th style="width:80px;">品牌</th>
-          <th style="min-width:130px;">零件号</th>
+          <th style="min-width:130px;">车型名称</th>
+          <th style="width:130px;">车型编码</th>
+          <th style="width:90px;">车型分类</th>
+          <th style="width:90px;">车型状态</th>
+          <th style="min-width:130px;">零件编号</th>
           <th style="min-width:150px;">零件名称</th>
+          <th style="width:110px;">采购类型</th>
           <th style="width:110px;">来源<span class="new-col-badge">新</span></th>
           <th style="width:90px;">更新人<span class="new-col-badge">新</span></th>
           <th style="width:150px;">更新时间<span class="new-col-badge">新</span></th>
@@ -95,54 +74,46 @@
       </table>
     </div>
 
-    <div class="table-wrap" id="viewMiss" style="flex:1;overflow:auto;min-height:0;display:none;">
-      <table class="list-table">
-        <thead><tr>
-          <th style="width:46px;">序号</th>
-          <th style="min-width:120px;">车型</th>
-          <th style="width:130px;">项目</th>
-          <th style="min-width:130px;">零件号</th>
-          <th style="min-width:160px;">缺失类型</th>
-          <th style="width:90px;">责任方</th>
-          <th style="width:90px;">状态</th>
-          <th style="width:90px;">操作</th>
-        </tr></thead>
-        <tbody id="missTbody"></tbody>
-      </table>
-    </div>
-
     <div class="pagination-bar">
-      <span class="muted">来源优先级：自动源（IBOM / 埃安GBOM / GBM-BOM / PMS）<b>&gt;</b> 人工补录（只补缺口、不覆盖自动源）；自动源行<b>只读</b>，人工补录行可编辑 / 删除。「缺失清单」为采购兜底补齐的依据。</span>
+      <span class="muted">来源优先级：自动源（IBOM / 埃安GBOM / GBM-BOM / PMS）<b>&gt;</b> 人工补录；自动源行<b>只读</b>，人工补录行可编辑 / 删除。<b>系统不判定缺件</b>，本页不提供缺失清单与覆盖率指标。</span>
     </div>
   </div>
 </div>
 </template>
 
-<!-- 人工补录弹窗 -->
+<!-- 人工补录弹窗（直接新增零件关系） -->
 <div class="modal-mask" id="editMask">
   <div class="modal-wrap" style="width:620px;">
-    <div class="modal-head"><h3>新增人工补录（采购兜底）</h3><span class="modal-close" onclick="closeEdit()">×</span></div>
+    <div class="modal-head"><h3>新增零件关系（人工补录）</h3><span class="modal-close" onclick="closeEdit()">×</span></div>
     <div class="modal-body">
       <div class="form-row">
         <div class="form-item"><label><span class="req">*</span>车型：</label>
           <div class="field-col">
             <select id="fModel"><option value="">请选择车型（读车型项目基础信息）</option>
               <option>AION Y</option><option>AION S Plus</option><option>AION V</option>
-              <option>传祺M8</option><option>传祺GS8</option><option>昊铂HT</option></select>
+              <option>传祺M8</option><option>传祺GS8</option><option>昊铂HT</option><option>昊铂GT</option></select>
             <div class="err">请选择车型</div>
           </div>
         </div>
       </div>
       <div class="form-row">
-        <div class="form-item"><label><span class="req">*</span>零件号：</label>
-          <div class="field-col"><textarea id="fParts" rows="4" placeholder="支持批量粘贴，一行一个零件号（如 MTOC-A1001）"></textarea><div class="err">请输入零件号</div>
+        <div class="form-item"><label><span class="req">*</span>零件编号：</label>
+          <div class="field-col"><textarea id="fParts" rows="4" placeholder="支持批量粘贴，一行一个零件编号（如 MTOC-A1001）"></textarea><div class="err">请输入零件编号</div>
             <div class="muted">保存时逐条校验：若该「车型 × 零件」已存在<b>自动源</b>记录，将<b>提示并阻断</b>（人工不覆盖自动源）</div>
           </div>
         </div>
       </div>
       <div class="form-row">
+        <div class="form-item"><label>采购类型：</label>
+          <div class="field-col">
+            <select id="fBuyType"><option value="">请选择（选填）</option><option>生产采购</option><option>非生产采购</option></select>
+            <div class="muted">取自【车型项目管理】零件 Tab 的「采购类型」；留空时按零件主数据带出</div>
+          </div>
+        </div>
+      </div>
+      <div class="form-row">
         <div class="form-item"><label>备注：</label>
-          <div class="field-col"><input type="text" id="fRemark" placeholder="如：上游未传递、跨项目补录原因">
+          <div class="field-col"><input type="text" id="fRemark" placeholder="如：跨项目补录、上游未传递原因">
             <div class="muted">补录后来源标记为 <span class="tag tag-gray">人工补录</span>，并记录更新人 / 更新时间</div>
           </div>
         </div>
@@ -168,26 +139,21 @@ GpmLayout.init({
   activeTab: 'carPartRel'
 });
 
-/* mock：车型 ↔ 零件关系（含自动源与人工补录；MTOC-A1001 为共用件 M:N 示例） */
+/* mock：车型 ↔ 零件关系（含自动源与人工补录；MTOC-A1001 为共用件 M:N 示例）
+   车型级字段（车型名称 / 车型编码 / 车型分类 / 车型状态）与零件级字段（零件编号 / 零件名称 / 采购类型）
+   均取自【车型项目管理】的零件 Tab；brand 仅用于筛选，不在列表展示。 */
 var rels = [
-  { model:'AION Y',       proj:'PRJ-AY2025', brand:'埃安', part:'MTOC-A1001', name:'前门内饰板',  src:'埃安GBOM', by:'系统',   time:'2026-09-20 02:10', status:'量产' },
-  { model:'AION Y',       proj:'PRJ-AY2025', brand:'埃安', part:'MTOC-A2001', name:'仪表板总成',  src:'IBOM',     by:'系统',   time:'2026-09-20 02:10', status:'量产' },
-  { model:'AION Y',       proj:'PRJ-AY2025', brand:'埃安', part:'MTOC-A3001', name:'座椅骨架',    src:'人工补录', by:'孙倩',   time:'2026-09-21 14:02', status:'量产' },
-  { model:'AION V',       proj:'PRJ-AV2025', brand:'埃安', part:'MTOC-E1001', name:'电池包上盖',  src:'IBOM',     by:'系统',   time:'2026-09-20 02:10', status:'量产' },
-  { model:'AION S Plus',  proj:'PRJ-AS2026', brand:'埃安', part:'MTOC-B1001', name:'前保险杠',    src:'PMS',      by:'系统',   time:'2026-09-18 03:00', status:'新车型' },
-  { model:'AION S Plus',  proj:'PRJ-AS2026', brand:'埃安', part:'MTOC-B2001', name:'中控显示屏',  src:'PMS',      by:'系统',   time:'2026-09-18 03:00', status:'新车型' },
-  { model:'传祺M8',       proj:'PRJ-M8-2025', brand:'传祺', part:'MTOC-A1001', name:'前门内饰板',  src:'GBM-BOM',  by:'系统',   time:'2026-09-19 01:30', status:'量产' },
-  { model:'传祺M8',       proj:'PRJ-M8-2025', brand:'传祺', part:'MTOC-C2001', name:'座椅骨架',    src:'GBM-BOM',  by:'系统',   time:'2026-09-19 01:30', status:'量产' },
-  { model:'传祺GS8',      proj:'PRJ-GS8-2026', brand:'传祺', part:'MTOC-D1001', name:'中控显示屏', src:'人工补录', by:'冷丹丹', time:'2026-09-21 15:20', status:'新车型' },
-  { model:'昊铂HT',       proj:'PRJ-HT2025', brand:'昊铂', part:'MTOC-F1001', name:'电动尾门',    src:'人工补录', by:'周敏',   time:'2026-09-19 10:30', status:'量产' }
-];
-
-/* mock：缺失清单（采购兜底补齐的依据） */
-var missList = [
-  { model:'AION Y',      proj:'PRJ-AY2025', brand:'埃安', part:'MTOC-A9999', kind:'上游未传递（IBOM/GBOM 无此件）', owner:'采购', status:'待补录' },
-  { model:'传祺M8',      proj:'PRJ-M8-2025', brand:'传祺', part:'MTOC-C3001', kind:'GBM 未卷入（BOM 批处理未覆盖）',  owner:'采购', status:'待补录' },
-  { model:'AION S Plus', proj:'PRJ-AS2026', brand:'埃安', part:'MTOC-B3001', kind:'PMS 同步失败',                  owner:'IT',   status:'处理中' },
-  { model:'昊铂HT',      proj:'PRJ-HT2025', brand:'昊铂', part:'MTOC-F2001', kind:'人工补录待复核',                owner:'采购', status:'待补录' }
+  { model:'AION Y',      mcode:'PRJ-AY2025',   mclass:'SUV', status:'量产',   brand:'埃安', part:'MTOC-A1001', name:'前门内饰板',  buyType:'生产采购',   src:'埃安GBOM', by:'系统',   time:'2026-09-20 02:10' },
+  { model:'AION Y',      mcode:'PRJ-AY2025',   mclass:'SUV', status:'量产',   brand:'埃安', part:'MTOC-A2001', name:'仪表板总成',  buyType:'生产采购',   src:'IBOM',     by:'系统',   time:'2026-09-20 02:10' },
+  { model:'AION Y',      mcode:'PRJ-AY2025',   mclass:'SUV', status:'量产',   brand:'埃安', part:'MTOC-A3001', name:'座椅骨架',    buyType:'生产采购',   src:'人工补录', by:'孙倩',   time:'2026-09-21 14:02' },
+  { model:'AION V',      mcode:'PRJ-AV2025',   mclass:'SUV', status:'量产',   brand:'埃安', part:'MTOC-E1001', name:'电池包上盖',  buyType:'生产采购',   src:'IBOM',     by:'系统',   time:'2026-09-20 02:10' },
+  { model:'AION S Plus', mcode:'PRJ-AS2026',   mclass:'轿车', status:'新车型', brand:'埃安', part:'MTOC-B1001', name:'前保险杠',    buyType:'生产采购',   src:'PMS',      by:'系统',   time:'2026-09-18 03:00' },
+  { model:'AION S Plus', mcode:'PRJ-AS2026',   mclass:'轿车', status:'新车型', brand:'埃安', part:'MTOC-B2001', name:'中控显示屏',  buyType:'非生产采购', src:'PMS',      by:'系统',   time:'2026-09-18 03:00' },
+  { model:'传祺M8',      mcode:'PRJ-M8-2024',  mclass:'MPV', status:'量产',   brand:'传祺', part:'MTOC-A1001', name:'前门内饰板',  buyType:'生产采购',   src:'GBM-BOM',  by:'系统',   time:'2026-09-19 01:30' },
+  { model:'传祺M8',      mcode:'PRJ-M8-2024',  mclass:'MPV', status:'量产',   brand:'传祺', part:'MTOC-C2001', name:'第三排座椅',  buyType:'生产采购',   src:'GBM-BOM',  by:'系统',   time:'2026-09-19 01:30' },
+  { model:'传祺GS8',     mcode:'PRJ-GS8-2026', mclass:'SUV', status:'量产',   brand:'传祺', part:'MTOC-G1001', name:'中控显示屏',  buyType:'生产采购',   src:'人工补录', by:'冷丹丹', time:'2026-09-21 15:20' },
+  { model:'昊铂HT',      mcode:'PRJ-HT2025',   mclass:'SUV', status:'量产',   brand:'昊铂', part:'MTOC-F1001', name:'电动尾门',    buyType:'生产采购',   src:'人工补录', by:'周敏',   time:'2026-09-19 10:30' },
+  { model:'昊铂GT',      mcode:'PRJ-HGT-2026', mclass:'轿车', status:'在研',   brand:'昊铂', part:'MTOC-D1001', name:'激光雷达支架', buyType:'生产采购',   src:'人工补录', by:'赵磊',   time:'2026-09-22 09:10' }
 ];
 
 var SRC_TAG = {
@@ -200,20 +166,14 @@ var SRC_TAG = {
 var AUTO_SRC = ['IBOM','埃安GBOM','GBM-BOM','PMS'];
 
 var filtered = rels.slice();
-var missFiltered = missList.slice();
 
-/* 共用件判定：同一零件号被 ≥2 个车型使用 */
+/* 共用件判定：同一零件编号被 ≥2 个车型使用 */
 function isShared(part){ return rels.filter(function(r){ return r.part===part; }).length >= 2; }
 function srcTag(s){ return '<span class="tag '+(SRC_TAG[s]||'tag-gray')+'">'+s+'</span>'; }
+function stTag(s){ return '<span class="tag '+(s==='量产'?'tag-green':(s==='新车型'?'tag-blue':'tag-orange'))+'">'+s+'</span>'; }
 
-function switchTab(tab, el){
-  document.querySelectorAll('.inner-tabs .tab-btn').forEach(function(x){ x.classList.remove('active'); });
-  if(el) el.classList.add('active');
-  document.getElementById('viewRel').style.display  = (tab==='rel')  ? '' : 'none';
-  document.getElementById('viewMiss').style.display = (tab==='miss') ? '' : 'none';
-}
 function doSearch(){
-  var m=qModel.value.trim(), b=qBrand.value, st=qStatus.value, s=qSrc.value, p=qPart.value.trim(), ms=qMissing.value;
+  var m=qModel.value.trim(), b=qBrand.value, st=qStatus.value, s=qSrc.value, p=qPart.value.trim();
   filtered = rels.filter(function(r){
     if(m && r.model.indexOf(m)<0) return false;
     if(b && r.brand!==b) return false;
@@ -222,78 +182,50 @@ function doSearch(){
     if(p && r.part.indexOf(p)<0 && r.name.indexOf(p)<0) return false;
     return true;
   });
-  missFiltered = missList.filter(function(r){
-    if(m && r.model.indexOf(m)<0) return false;
-    if(b && r.brand!==b) return false;
-    return true;
-  });
   render();
 }
 function resetSearch(){
   ['qModel','qPart'].forEach(function(id){document.getElementById(id).value='';});
-  ['qBrand','qStatus','qSrc','qMissing'].forEach(function(id){document.getElementById(id).value='';});
-  filtered=rels.slice(); missFiltered=missList.slice(); render();
+  ['qBrand','qStatus','qSrc'].forEach(function(id){document.getElementById(id).value='';});
+  filtered=rels.slice(); render();
 }
 function render(){
   var tb=document.getElementById('tbody'); tb.innerHTML='';
+  if(!filtered.length){
+    tb.innerHTML='<tr><td colspan="11" style="text-align:center;color:#909399;padding:32px 0;">暂无数据</td></tr>';
+    document.getElementById('totalText').innerText = 0;
+    return;
+  }
   filtered.forEach(function(r,i){
     /* 自动源只读，人工补录可编辑/删除 */
     var ops = (AUTO_SRC.indexOf(r.src)>=0)
       ? '<span class="muted">只读（自动源）</span>'
       : '<span class="op-link" onclick="openEdit('+i+')">编辑</span><span class="op-link danger" onclick="delRel('+i+')">删除</span>';
     var tr=document.createElement('tr');
-    tr.innerHTML='<td>'+(i+1)+'</td>'+
-      '<td class="text-left">'+r.model+'</td>'+
-      '<td>'+r.proj+'</td>'+
-      '<td>'+r.brand+'</td>'+
-      '<td class="text-left">'+r.part+(isShared(r.part)?' <span class="tag share-badge">共用件</span>':'')+'</td>'+
+    tr.innerHTML='<td class="text-left">'+r.model+'</td>'+
+      '<td class="mono">'+r.mcode+'</td>'+
+      '<td>'+r.mclass+'</td>'+
+      '<td>'+stTag(r.status)+'</td>'+
+      '<td class="text-left mono">'+r.part+(isShared(r.part)?' <span class="tag share-badge">共用件</span>':'')+'</td>'+
       '<td class="text-left">'+r.name+'</td>'+
+      '<td>'+(r.buyType||'<span class="muted">—</span>')+'</td>'+
       '<td>'+srcTag(r.src)+'</td>'+
       '<td>'+r.by+'</td>'+
       '<td>'+r.time+'</td>'+
       '<td>'+ops+'</td>';
     tb.appendChild(tr);
   });
-  var mb=document.getElementById('missTbody'); mb.innerHTML='';
-  missFiltered.forEach(function(r,i){
-    var stTag='<span class="tag '+(r.status==='处理中'?'tag-blue':'tag-red')+'">'+r.status+'</span>';
-    var tr=document.createElement('tr');
-    tr.innerHTML='<td>'+(i+1)+'</td>'+
-      '<td class="text-left">'+r.model+'</td>'+
-      '<td>'+r.proj+'</td>'+
-      '<td class="text-left">'+r.part+'</td>'+
-      '<td class="text-left">'+r.kind+'</td>'+
-      '<td>'+r.owner+'</td>'+
-      '<td>'+stTag+'</td>'+
-      '<td><span class="op-link" onclick="openEdit(-1,\''+r.model+'\',\''+r.part+'\')">去补录</span></td>';
-    mb.appendChild(tr);
-  });
-
-  /* KPI 与覆盖率（按当前演示数据实时计算） */
   document.getElementById('totalText').innerText = filtered.length;
-  var total = rels.length + missList.length;
-  var rate = total ? (rels.length*100/total).toFixed(1) : '0.0';
-  document.getElementById('coverRate').innerText = rate + '%';
-  document.getElementById('kpiRel').innerText = rels.length;
-  document.getElementById('kpiMiss').innerText = missList.length;
-  function cnt(s){ return rels.filter(function(r){return r.src===s;}).length; }
-  document.getElementById('cIbom').innerText   = cnt('IBOM');
-  document.getElementById('cGbom').innerText   = cnt('埃安GBOM');
-  document.getElementById('cGbm').innerText    = cnt('GBM-BOM');
-  document.getElementById('cPms').innerText    = cnt('PMS');
-  document.getElementById('cManual').innerText = cnt('人工补录');
 }
 
-function openEdit(i, model, part){
+function openEdit(i){
   window._editIdx = (typeof i==='number') ? i : -1;
   document.querySelectorAll('#editMask .form-item').forEach(function(x){x.classList.remove('error');});
   if(window._editIdx>=0){
     var r=filtered[window._editIdx];
-    fModel.value=r.model; fParts.value=r.part; fRemark.value='';
+    fModel.value=r.model; fParts.value=r.part; fBuyType.value=r.buyType||''; fRemark.value='';
   } else {
-    fModel.value = model || '';
-    fParts.value = part || '';
-    fRemark.value = '';
+    fModel.value = ''; fParts.value = ''; fBuyType.value=''; fRemark.value = '';
   }
   document.getElementById('editMask').classList.add('show');
 }
@@ -305,7 +237,7 @@ function saveRel(){
   mark('fParts', !!fParts.value.trim());
   if(!ok) return;
   var parts = fParts.value.split('\n').map(function(x){return x.trim();}).filter(function(x){return x;});
-  /* 兜底规则：人工不覆盖自动源 */
+  /* 防重复/防覆盖：人工不覆盖自动源 */
   var conflicts = [];
   parts.forEach(function(p){
     rels.forEach(function(r){
@@ -314,35 +246,38 @@ function saveRel(){
   });
   if(conflicts.length){
     alert('以下「车型 × 零件」已存在自动源记录，人工补录不得覆盖：\n· ' + conflicts.join('\n· ')
-        + '\n\n请改由上游（IBOM / 埃安GBOM / GBM-BOM / PMS）补齐，或在缺失清单中跟进。');
+        + '\n\n请改由上游（IBOM / 埃安GBOM / GBM-BOM / PMS）传递，或核对零件编号后重试。');
     return;
   }
   if(window._editIdx>=0){
     filtered[window._editIdx].part = parts[0] || filtered[window._editIdx].part;
-    Object.assign(filtered[window._editIdx], { src:'人工补录', by:'当前用户', time:now() });
+    Object.assign(filtered[window._editIdx], { src:'人工补录', by:'当前用户', time:now(), buyType: fBuyType.value || filtered[window._editIdx].buyType });
     var gi = rels.indexOf(filtered[window._editIdx]);
     if(gi>-1){ rels[gi].part = filtered[window._editIdx].part; rels[gi].src='人工补录'; rels[gi].by='当前用户'; rels[gi].time=now(); }
   } else {
     parts.forEach(function(p){
-      rels.unshift({ model:fModel.value, proj:projOf(fModel.value), brand:brandOf(fModel.value),
-                     part:p, name:'（待补全）', src:'人工补录', by:'当前用户', time:now(),
-                     status:statusOf(fModel.value) });
+      rels.unshift({ model:fModel.value, mcode:mcodeOf(fModel.value), mclass:mclassOf(fModel.value),
+                     status:statusOf(fModel.value), brand:brandOf(fModel.value),
+                     part:p, name:'（待补全）', buyType:fBuyType.value, src:'人工补录', by:'当前用户', time:now() });
     });
   }
   closeEdit(); doSearch();
-  alert('已提交人工补录 ' + (window._editIdx>=0 ? 1 : parts.length) + ' 条（来源标记：人工补录，采购兜底）');
+  alert('已新增零件关系 ' + (window._editIdx>=0 ? 1 : parts.length) + ' 条（来源标记：人工补录）');
 }
 function delRel(i){
   if(confirm('确认删除该条人工补录关系吗？\n（自动源记录不可删除）')){
     var r=filtered[i]; var gi=rels.indexOf(r); if(gi>-1) rels.splice(gi,1); doSearch();
   }
 }
-function projOf(m){ var r=rels.filter(function(x){return x.model===m;})[0]; return r?r.proj:'—'; }
-function brandOf(m){ var r=rels.filter(function(x){return x.model===m;})[0]; return r?r.brand:'—'; }
-function statusOf(m){ var r=rels.filter(function(x){return x.model===m;})[0]; return r?r.status:'量产'; }
+/* 车型级字段从既有关系带出（真实系统读【车型项目管理】零件 Tab） */
+function fromModel(m,k){ var r=rels.filter(function(x){return x.model===m;})[0]; return r?r[k]:'—'; }
+function mcodeOf(m){ return fromModel(m,'mcode'); }
+function mclassOf(m){ return fromModel(m,'mclass'); }
+function statusOf(m){ return fromModel(m,'status'); }
+function brandOf(m){ return fromModel(m,'brand'); }
 function now(){var d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')+' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');}
 
-function doImport(){ alert('导入手工补录清单\n模板列：车型｜零件号｜备注\n\n校验规则：\n· 车型须在车型项目基础信息内，否则整单失败\n· 命中自动源（IBOM / 埃安GBOM / GBM-BOM / PMS）的行＝报错并提示行号，人工不覆盖自动源\n· 文件内「车型 + 零件号」重复＝整单失败'); }
+function doImport(){ alert('导入车型·零件关系（人工补录新增）\n模板列：车型名称｜零件编号｜采购类型｜备注\n\n校验规则：\n· 车型须在【车型项目管理】车型项目基础信息内，否则整单失败\n· 命中自动源（IBOM / 埃安GBOM / GBM-BOM / PMS）的行＝报错并提示行号（人工不覆盖自动源）\n· 文件内「车型 + 零件编号」重复＝整单失败\n· 导入即新增关系（系统不判定缺件，不做缺口比对）'); }
 function doExport(){ alert('已导出 车型零件关系.xlsx（'+filtered.length+' 条）\n按当前筛选条件导出全部命中数据，不受分页影响；含来源 / 更新人 / 更新时间留痕列。'); }
 
 doSearch();
