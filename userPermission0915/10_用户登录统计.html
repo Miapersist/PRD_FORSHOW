@@ -16,12 +16,7 @@
   <div class="panel" style="flex:1;display:flex;flex-direction:column;min-height:0;border:none;border-radius:0;">
 
     <div class="inner-tabs">
-      <div class="tab-btn active" data-view="all" onclick="switchView('all',this)">用户登录统计<span class="new-col-badge">改造</span><span class="muted">（对采购开放）</span></div>
-    </div>
-
-    <div class="alert alert-info" style="margin:12px 16px 0;">
-      <span class="ico">ⓘ</span>
-      <div><b>复用现有系统页面【用户登录统计】，不新建页面</b>——用户登录统计是<b>用户维度</b>的登录统计，与导出中心的<b>文件维度</b>导出记录不是同一场景，故独立于导出中心。<br>本次改造 3 项：<b>① 对采购开放查看</b>（数据权限约束为仅采购 / 领导可见）；<b>② 新增「导出」按钮</b>（导出当前查询结果，替代人工到后台捞数）；<b>③ 查询条件补「起始 / 结束时间」</b>（支持"25 年至今 / 26 年至今"，因 25 年合并）。<br>数据来源：<code>scc_log_user_trace</code>（<code>LOGIN_NUM</code> 累计登录次数、<code>CUMULATIVE_ONLINE_TIME</code> 累计在线时间）；明细 <code>/api-rbac/traceinfo/listPage</code>。</div>
+      <div class="tab-btn active" data-view="all" onclick="switchView('all',this)">用户登录统计<span class="new-col-badge">调整</span></div>
     </div>
 
     <div class="search-area" id="searchArea">
@@ -50,12 +45,13 @@
       <table class="list-table">
         <thead><tr>
           <th style="width:46px;">序号</th>
-          <th style="min-width:100px;">用户</th>
-          <th style="width:100px;">工号</th>
-          <th style="min-width:120px;">研发部门</th>
+          <th style="width:180px;">日期</th>
+          <th style="min-width:100px;">用户名</th>
+          <th style="width:110px;">账号类型</th>
           <th style="width:120px;">累计登录次数</th>
           <th style="width:120px;">累计在线时间</th>
           <th style="width:150px;">最后登录时间</th>
+          <th style="width:150px;">最后登出时间</th>
           <th style="width:80px;">操作</th>
         </tr></thead>
         <tbody id="tbody"></tbody>
@@ -63,7 +59,6 @@
     </div>
 
     <div class="pagination-bar">
-      <span class="muted">「累计登录次数 / 累计在线时间」按「起始 / 结束时间」区间汇总；点击「明细」查看该用户的逐次登录记录（登录时间 / 登出时间 / 单次在线时长 / 登录 IP）。</span>
     </div>
   </div>
 </div>
@@ -83,11 +78,11 @@ GpmLayout.init({
 
 /* mock：用户登录统计汇总（区间：2026-01-01 ~ 2026-09-22） */
 var rows = [
-  { user:'冷丹丹', emp:'00130778', dept:'采购部',     count:326, online:'612 小时', last:'2026-09-22 08:41', me:true },
-  { user:'孙倩',   emp:'00180123', dept:'采购部',     count:210, online:'398 小时', last:'2026-09-20 16:38' },
-  { user:'王慧芬', emp:'00120456', dept:'成本工程部', count:488, online:'964 小时', last:'2026-09-20 10:02' },
-  { user:'刘德',   emp:'00150234', dept:'车身开发部', count:156, online:'287 小时', last:'2026-09-19 14:18' },
-  { user:'周敏',   emp:'00190456', dept:'财务部',     count:12,  online:'19 小时',  last:'2026-06-30 15:20' }
+  { date:'2026-01-01 ~ 2026-09-22', user:'冷丹丹', emp:'00130778', dept:'采购部',     type:'采购商', count:326, online:'612 小时', last:'2026-09-22 08:41', out:'2026-09-22 09:58', me:true },
+  { date:'2026-01-01 ~ 2026-09-22', user:'孙倩',   emp:'00180123', dept:'采购部',     type:'采购商', count:210, online:'398 小时', last:'2026-09-20 16:38', out:'2026-09-20 18:05' },
+  { date:'2026-01-01 ~ 2026-09-22', user:'王慧芬', emp:'00120456', dept:'成本工程部', type:'采购商', count:488, online:'964 小时', last:'2026-09-20 10:02', out:'2026-09-20 19:12' },
+  { date:'2026-01-01 ~ 2026-09-22', user:'刘德',   emp:'00150234', dept:'车身开发部', type:'采购商', count:156, online:'287 小时', last:'2026-09-19 14:18', out:'2026-09-19 18:00' },
+  { date:'2026-01-01 ~ 2026-09-22', user:'周敏',   emp:'00190456', dept:'财务部',     type:'采购商', count:12,  online:'19 小时',  last:'2026-06-30 15:20', out:'2026-06-30 15:39' }
 ];
 
 /* mock：明细（按 traceId） */
@@ -132,12 +127,13 @@ function render(){
     var tr=document.createElement('tr');
     tr.innerHTML =
       '<td>'+(i+1)+'</td>'+
+      '<td class="text-left">'+r.date+'</td>'+
       '<td class="text-left">'+r.user+(r.me?' <span class="tag tag-blue">本人</span>':'')+'</td>'+
-      '<td>'+r.emp+'</td>'+
-      '<td class="text-left">'+r.dept+'</td>'+
+      '<td>'+r.type+'</td>'+
       '<td>'+r.count+'</td>'+
       '<td>'+(r.online||'—')+'</td>'+
       '<td>'+r.last+'</td>'+
+      '<td>'+(r.out||'—')+'</td>'+
       '<td><span class="export-dl" onclick="showDetail(\''+r.emp+'\',\''+r.user+'\')">明细</span></td>';
     tb.appendChild(tr);
   });
@@ -146,13 +142,12 @@ function render(){
 function showDetail(emp, user){
   var d = DETAIL[emp];
   var s = '登录明细：'+user+'（'+emp+'）\n\n';
-  if(!d){ s += '（原型占位：该用户明细数据略）'; }
+  if(!d){ s += '（无明细）'; }
   else { d.forEach(function(x){ s += x.in+' ~ '+x.out+'　在线 '+x.dur+'　IP '+x.ip+'\n'; }); }
   alert(s);
 }
 function doExport(){
-  alert('导出：'+filtered.length+' 条\n（原型占位，实际导出当前查询结果为 Excel；'
-      + '替代现状"人工找后台捞数"）');
+  alert('导出：'+filtered.length+' 条');
 }
 
 doSearch();

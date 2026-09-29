@@ -9,7 +9,7 @@ a { text-decoration: none; }
 .wrap { display: flex; height: 100vh; overflow: hidden; }
 
 /* ===== 左侧导航 ===== */
-.sidebar { width: 208px; background: #283346; color: #c9d2e0; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; }
+.sidebar { width: 240px; background: #283346; color: #c9d2e0; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; }
 .sidebar-header { height: 56px; display: flex; align-items: center; padding: 0 18px; gap: 10px; border-bottom: 1px solid #3a475c; flex-shrink: 0; }
 .sidebar-header .logo { width: 30px; height: 30px; background: #1869e1; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: bold; font-size: 13px; }
 .sidebar-header .sys-name { color: #fff; font-size: 15px; font-weight: bold; letter-spacing: 1px; }
@@ -21,7 +21,8 @@ a { text-decoration: none; }
 .sidebar-menu li:hover { background: #1f2936; color: #fff; }
 .sidebar-menu li.active { background: #1869e1; color: #fff; }
 .sidebar-menu li.sub { padding-left: 42px; font-size: 13px; }
-.sidebar-menu li .dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; opacity: .6; }
+.sidebar-menu li .dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; opacity: .6; flex: none; }
+.sidebar-menu li .menu-label { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* ===== 主区域 ===== */
 .main { flex: 1; display: flex; flex-direction: column; min-width: 0; min-height: 0; overflow: hidden; }
@@ -94,6 +95,7 @@ a { text-decoration: none; }
 .list-table .new-col { background: #f0f7ff; position: relative; }
 .list-table th.new-col { background: #e3f0ff; }
 .new-col-badge { display: inline-block; background: #f56c6c; color: #fff; font-size: 10px; padding: 0 4px; border-radius: 3px; margin-left: 4px; vertical-align: 2px; transform: scale(.9); }
+.menu-tag { display: inline-block; flex: none; margin-left: 3px; font-size: 9px; color: #f56c6c; transform: scale(.94); white-space: nowrap; }
 
 /* tag */
 .tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 12px; line-height: 1.4; }

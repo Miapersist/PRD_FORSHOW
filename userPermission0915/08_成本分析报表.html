@@ -27,7 +27,6 @@
         <option value="deptManager">部门经理（按研发部门：车身开发部）</option>
         <option value="useEngineer">使用工程师（按功能包：责任工程师＝本人）</option>
       </select>
-      <span class="muted">切换后演示「数据范围（按报表研发领域/研发部门/功能包列过滤）＋字段权限脱敏」效果</span>
     </div>
 
     <div class="search-area" id="searchArea">
@@ -40,7 +39,7 @@
           <select id="qDept"><option value="">全部</option><option>车身开发部</option><option>架构开发部</option><option>智能座舱产品线</option></select></div>
         <div class="search-item"><label>功能包：</label><input type="text" id="qFp" placeholder="请输入功能包"></div>
         <div class="search-item"><label>数据版本：</label>
-          <span class="ver-lock">仅发布（<b>实时数据不对外可见</b>）</span></div>
+          <span class="ver-lock">仅发布</span></div>
         <div class="search-actions">
           <button class="btn btn-primary" onclick="doSearch()">查询</button>
           <button class="btn btn-default" onclick="resetSearch()">重置</button>
@@ -81,7 +80,6 @@
     <div class="pagination-bar">
       <select><option>15条/页</option><option>30条/页</option></select>
       <span id="totalText">共 0 条</span>
-      <span class="muted">数据范围按报表「研发领域/研发部门/功能包/责任工程师」列过滤（代码写死）；无权字段以 * 显示，导出同样脱敏。</span>
     </div>
   </div>
 </div>
@@ -147,7 +145,7 @@ function updateVerAlert(){
   var maskTip = perm.maskMoney
     ? '　字段权限：金额类敏感字段已<b>脱敏（*）</b>。'
     : '　字段权限：金额字段<b>可见</b>。';
-  t.innerHTML = '<b>当前：'+perm.label+'</b>　|　数据版本：<b>仅发布</b>（实时数据不对外可见）。'+scopeTip+maskTip;
+  t.innerHTML = '<b>当前：'+perm.label+'</b>　|　数据版本：<b>仅发布</b>';
 }
 
 /* 数据范围过滤（代码写死，取报表列） */
@@ -212,7 +210,7 @@ function render(){
 function doExport(){
   var perm = ROLE_PERM[curRole];
   var maskNote = perm.maskMoney? '（金额字段已脱敏为 *）':'';
-  alert('已导出【仅发布】版本成本分析报表.xlsx'+maskNote+'\n导出与页面共用同一套数据范围与字段权限判定。');
+  alert('已导出【仅发布】版本成本分析报表.xlsx');
 }
 
 applyRole();

@@ -26,7 +26,6 @@
     <div class="search-area" id="searchArea">
       <div class="search-form">
         <div class="search-item"><label>账号：</label><input type="text" id="qUser" placeholder="请输入账号"></div>
-        <div class="search-item new-col"><label>姓名：</label><input type="text" id="qName" placeholder="请输入姓名"></div>
         <div class="search-item new-col"><label>一级部门：</label>
           <select id="qDept1"><option value="">全部</option><option>研发总院</option><option>采购本部</option><option>财务本部</option><option>数字化部</option></select></div>
         <div class="search-item new-col"><label>二级部门：</label>
@@ -35,8 +34,9 @@
           <select id="qDept3"><option value="">全部</option><option>内外饰科</option><option>底盘科</option><option>成本管理科</option></select></div>
         <div class="search-item new-col"><label>在职状态：</label>
           <select id="qStatus"><option value="">全部</option><option>在职</option><option>离职</option></select></div>
+        <div class="search-item new-col"><label>上级领导：</label><input type="text" id="qLeader" placeholder="请输入领导姓名"></div>
+        <div class="search-item new-col"><label>上上级领导：</label><input type="text" id="qLeader2" placeholder="请输入领导姓名"></div>
         <div class="search-item new-col"><label>生效日期：</label><input type="text" id="qStart" placeholder="选择日期" onfocus="this.type='date'"></div>
-        <div class="search-item new-col"><label>转岗前岗位：</label><input type="text" id="qPrePost" placeholder="请输入岗位"></div>
         <div class="search-item"><label>角色：</label>
           <select id="qRole"><option value="">全部</option><option>成本管理员</option><option>采购员</option><option>使用工程师</option><option>领域经理</option><option>部门经理</option></select></div>
         <div class="search-actions">
@@ -52,14 +52,9 @@
       <button class="btn btn-default" onclick="tip('导入用户（用户导入模板.xlsx）·仅支持新增')">导入用户</button>
       <button class="btn btn-default" onclick="tip('导入角色（用户-组织权限导入模板.xlsx）')">导入角色</button>
       <button class="btn btn-default" onclick="tip('导入原有角色组织权限（用户角色权限导入模板.xlsx）')">导入原有角色组织权限</button>
-      <button class="btn btn-default new-col" onclick="tip('导入用户模板更新已有账户')"><b>更新用户</b> <span class="new-col-badge">新</span></button>
-      <button class="btn btn-default" onclick="doExportCustom()">自定义导出</button>
+      <button class="btn btn-default new-col" onclick="tip('导入用户模板更新已有采购商账户')"><b>更新采购商用户</b> <span class="new-col-badge">调整</span></button>
+      <button class="btn btn-default new-col" onclick="doExportCustom()">自定义导出<span class="new-col-badge">调整</span></button>
       <div class="right"><span class="toolbar-note">共 <b id="totalText">0</b> 个账号</span></div>
-    </div>
-
-    <div class="alert alert-info" style="margin-top:0;">
-      <span class="ico">ⓘ</span>
-      <div><b>本次改造</b>：① 列表补齐生产现状字段（工号／手机号／邮箱／账号类型／生效日期／失效日期）并新增<b>集团SAP工号</b>（DDHR 提供，与「工号」非同一字段）；② 承接 IAM <b>一级/二级/三级部门</b>、<b>上级领导 / 上上级领导（部长 / 本部长）</b>、岗位、在职/离职、离职日期；③ 新增<b>转岗前岗位／转岗时间</b>（每 30 分钟增量同步，岗位变化写入）；④ 移除「权限」列（收敛到【角色维护】）、「岗位」「角色」列保留；⑤ <b>新增「更新用户」</b>按钮（现网「导入用户」只能新增、不能更新）。</div>
     </div>
 
     <div class="table-wrap" style="flex:1;overflow:auto;min-height:0;">
@@ -68,24 +63,24 @@
           <th style="width:46px;">序号</th>
           <th style="min-width:100px;">账号</th>
           <th style="width:90px;">工号</th>
-          <th class="new-col" style="width:100px;">集团SAP工号<span class="new-col-badge">新</span></th>
+          <th class="new-col" style="width:100px;">集团SAP工号<span class="new-col-badge">调整</span></th>
           <th style="width:80px;">姓名</th>
-          <th class="new-col" style="width:110px;">手机号<span class="new-col-badge">新</span></th>
-          <th class="new-col" style="min-width:150px;">邮箱<span class="new-col-badge">新</span></th>
-          <th class="new-col" style="min-width:100px;">一级部门<span class="new-col-badge">新</span></th>
-          <th class="new-col" style="min-width:100px;">二级部门<span class="new-col-badge">新</span></th>
-          <th class="new-col" style="min-width:100px;">三级部门<span class="new-col-badge">新</span></th>
-          <th class="new-col" style="min-width:96px;">上级领导<span class="new-col-badge">新</span></th>
-          <th class="new-col" style="min-width:96px;">上上级领导<span class="new-col-badge">新</span></th>
-          <th style="min-width:90px;">岗位</th>
-          <th class="new-col" style="width:80px;">在职状态<span class="new-col-badge">新</span></th>
-          <th class="new-col" style="width:96px;">离职日期<span class="new-col-badge">新</span></th>
-          <th class="new-col" style="min-width:96px;">转岗前岗位<span class="new-col-badge">新</span></th>
-          <th class="new-col" style="width:120px;">转岗时间<span class="new-col-badge">新</span></th>
+          <th style="width:110px;">手机号</th>
+          <th style="min-width:150px;">邮箱</th>
+          <th class="new-col" style="min-width:100px;">一级部门<span class="new-col-badge">调整</span></th>
+          <th class="new-col" style="min-width:100px;">二级部门<span class="new-col-badge">调整</span></th>
+          <th class="new-col" style="min-width:100px;">三级部门<span class="new-col-badge">调整</span></th>
+          <th class="new-col" style="min-width:96px;">上级领导<span class="new-col-badge">调整</span></th>
+          <th class="new-col" style="min-width:96px;">上上级领导<span class="new-col-badge">调整</span></th>
+          <th class="new-col" style="min-width:90px;">岗位<span class="new-col-badge">调整</span></th>
+          <th class="new-col" style="width:80px;">在职状态<span class="new-col-badge">调整</span></th>
+          <th class="new-col" style="width:96px;">离职日期<span class="new-col-badge">调整</span></th>
+          <th class="new-col" style="min-width:96px;">转岗前岗位<span class="new-col-badge">调整</span></th>
+          <th class="new-col" style="width:120px;">转岗时间<span class="new-col-badge">调整</span></th>
           <th style="width:90px;">账号类型</th>
-          <th class="new-col" style="min-width:150px;">角色<span class="new-col-badge">新</span></th>
-          <th class="new-col" style="width:100px;">生效日期<span class="new-col-badge">新</span></th>
-          <th class="new-col" style="width:100px;">失效日期<span class="new-col-badge">新</span></th>
+          <th class="new-col" style="min-width:150px;">角色<span class="new-col-badge">调整</span></th>
+          <th style="width:100px;">生效日期</th>
+          <th style="width:100px;">失效日期</th>
           <th style="width:70px;">操作</th>
         </tr></thead>
         <tbody id="tbody"></tbody>
@@ -160,7 +155,7 @@
 
         <!-- 5 个 SSO 账号（只读） -->
         <div class="panel" style="margin-top:14px;border:1px dashed #dcdfe6;">
-          <div class="panel-title" style="font-size:13px;background:#fafafa;">SSO 账号（IAM 下发，只读）<span class="new-col-badge">新</span></div>
+          <div class="panel-title" style="font-size:13px;background:#fafafa;">SSO 账号<span class="new-col-badge">调整</span></div>
           <div class="panel-body">
             <div class="form-row">
               <div class="form-item"><label>埃安SSO账号：</label><input type="text" id="fAionSso" readonly></div>
@@ -180,7 +175,7 @@
 
     <!-- 组织权限 -->
     <div class="collapse-item" style="margin:0 12px;">
-      <div class="collapse-head">组织权限（IAM 下发，支持多工厂/部门层级）<button class="btn btn-primary btn-sm" onclick="openOrgTree()">新增</button></div>
+      <div class="collapse-head">组织权限<button class="btn btn-primary btn-sm" onclick="openOrgTree()">新增</button></div>
       <div class="collapse-body">
         <table class="mini-table"><thead><tr><th>组织名称（全路径）</th><th style="width:130px;">生效日期</th><th style="width:130px;">失效日期</th><th style="width:70px;">操作</th></tr></thead>
         <tbody id="orgTbody"></tbody></table>
@@ -189,7 +184,7 @@
 
     <!-- 角色权限 -->
     <div class="collapse-item" style="margin:12px;">
-      <div class="collapse-head">角色权限（行内绑定，支持多角色）<button class="btn btn-primary btn-sm" onclick="addRoleRow()">新增</button></div>
+      <div class="collapse-head">角色权限<button class="btn btn-primary btn-sm" onclick="addRoleRow()">新增</button></div>
       <div class="collapse-body">
         <table class="mini-table"><thead><tr><th>角色名称</th><th style="width:130px;">生效日期</th><th style="width:130px;">失效日期</th><th style="width:70px;">操作</th></tr></thead>
         <tbody id="roleTbody"></tbody></table>
@@ -288,22 +283,22 @@ function render(){
       '<td>'+u.emp+'</td>'+
       '<td class="new-col">'+u.gac+'</td>'+
       '<td>'+u.name+'</td>'+
-      '<td class="new-col">'+u.phone+'</td>'+
-      '<td class="new-col">'+u.email+'</td>'+
+      '<td>'+u.phone+'</td>'+
+      '<td>'+u.email+'</td>'+
       '<td class="new-col">'+u.d1+'</td>'+
       '<td class="new-col">'+u.d2+'</td>'+
       '<td class="new-col">'+u.d3+'</td>'+
       '<td class="new-col">'+(u.leader||'<span class="muted">—</span>')+'</td>'+
       '<td class="new-col">'+(u.leader2||'<span class="muted">—</span>')+'</td>'+
-      '<td>'+u.post+'</td>'+
+      '<td class="new-col">'+u.post+'</td>'+
       '<td class="new-col">'+statusTag(u.status)+'</td>'+
       '<td class="new-col">'+(u.leave||'<span class="muted">—</span>')+'</td>'+
       '<td class="new-col">'+(u.prePost||'<span class="muted">—</span>')+'</td>'+
       '<td class="new-col">'+(u.preTime||'<span class="muted">—</span>')+'</td>'+
       '<td>'+u.type+'</td>'+
       '<td class="new-col text-left">'+roleCell+'</td>'+
-      '<td class="new-col">'+(u.start||'2021-08-26')+'</td>'+
-      '<td class="new-col">'+(u.end||'<span class="muted">长期</span>')+'</td>'+
+      '<td>'+(u.start||'2021-08-26')+'</td>'+
+      '<td>'+(u.end||'<span class="muted">长期</span>')+'</td>'+
       '<td><span class="op-link" onclick="openEdit('+gi+')">编辑</span></td>';
     tbody.appendChild(tr);
   });
@@ -322,25 +317,26 @@ function gotoPage(p){var pages=Math.max(1,Math.ceil(filtered.length/pageSize));i
 
 /* ================= 查询 ================= */
 function doSearch(){
-  var u=document.getElementById('qUser').value.trim(), nm=document.getElementById('qName').value.trim(),
+  var u=document.getElementById('qUser').value.trim(),
       d1=qDept1.value, d2=qDept2.value, d3=qDept3.value, st=qStatus.value,
-      sd=document.getElementById('qStart').value, pp=document.getElementById('qPrePost').value.trim(), ro=qRole.value;
+      sd=document.getElementById('qStart').value, ro=qRole.value,
+      ld=document.getElementById('qLeader').value.trim(), ld2=document.getElementById('qLeader2').value.trim();
   filtered=users.filter(function(x){
     if(u && x.acc.indexOf(u)<0) return false;
-    if(nm && x.name.indexOf(nm)<0) return false;
     if(d1 && x.d1!==d1)return false; if(d2 && x.d2!==d2)return false; if(d3 && x.d3!==d3)return false;
     if(st && x.status!==st)return false;
     if(sd && (x.start||'2021-08-26')!==sd) return false;
-    if(pp && (x.prePost||'').indexOf(pp)<0) return false;
+    if(ld && (x.leader||'').indexOf(ld)<0) return false;
+    if(ld2 && (x.leader2||'').indexOf(ld2)<0) return false;
     if(ro && x.roles.indexOf(ro)<0)return false;
     return true;
   });
   curPage=1; render();
 }
-function resetSearch(){['qUser','qName','qStart','qPrePost'].forEach(function(id){document.getElementById(id).value='';});['qDept1','qDept2','qDept3','qStatus','qRole'].forEach(function(id){document.getElementById(id).value='';});filtered=users.slice();curPage=1;render();}
+function resetSearch(){['qUser','qStart','qLeader','qLeader2'].forEach(function(id){document.getElementById(id).value='';});['qDept1','qDept2','qDept3','qStatus','qRole'].forEach(function(id){document.getElementById(id).value='';});filtered=users.slice();curPage=1;render();}
 function toggleSearch(){var a=document.getElementById('searchArea'),i=document.getElementById('collapseIco');if(a.style.display==='none'){a.style.display='block';i.textContent='∧';}else{a.style.display='none';i.textContent='∨';}}
-function tip(m){alert(m+'\n（原型占位：导入走标准模板下载+上传组件）');}
-function doExportCustom(){ alert('自定义导出（沿用系统历史功能，不新增按钮）\n支持用户自选导出字段，本次新增字段（集团SAP工号、一/二/三级部门、在职状态、离职日期、转岗前岗位、转岗时间、生效/失效日期等）已纳入可选项。'); }
+function tip(m){alert(m);}
+function doExportCustom(){ alert('自定义导出'); }
 
 /* ================= 编辑页 ================= */
 function openEdit(gi){
@@ -370,7 +366,7 @@ function openEdit(gi){
 }
 function today(){var d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
 function closeEdit(){document.getElementById('editView').style.display='none';document.getElementById('listView').style.display='flex';render();}
-function quickPickUser(){alert('快速搜索：从 IAM/HR 选人后自动带出姓名/工号/集团SAP工号/公司/一二级三级部门/邮箱/手机/岗位/SSO账号');}
+function quickPickUser(){alert('快速搜索');}
 
 /* ---- 组织权限行 ---- */
 function renderOrgRows(){

@@ -15,14 +15,14 @@ var GpmLayout = (function () {
     { label: '分析报表' },
     { group: '系统管理' },
     { label: '账户权限', open: true, children: [
-      { label: '用户权限', key: 'userAccess', page: '01_用户权限.html' },
-      { label: '角色维护', key: 'roleMaintenance', page: '02_角色维护.html' },
-      { label: '数据权限配置', key: 'dataAuthConfig', page: '03_数据权限配置.html' },
-      { label: '字段权限配置', key: 'fieldPermission', page: '04_字段权限配置.html' },
-      { label: '敏感字段元数据维护', key: 'fieldMetadata', page: '05_字段元数据维护.html' },
-      { label: '统一统筹页', key: 'unifiedScope', page: '06_统一统筹页.html' },
-      { label: '导出中心', key: 'exportCenter', page: '09_导出中心.html' },
-      { label: '用户登录统计', key: 'userLoginStat', page: '10_用户登录统计.html' },
+      { label: '用户权限<span class="menu-tag">【改造页】</span>', key: 'userAccess', page: '01_用户权限.html' },
+      { label: '角色维护<span class="menu-tag">【改造页】</span>', key: 'roleMaintenance', page: '02_角色维护.html' },
+      { label: '数据权限配置<span class="menu-tag">【改造页】</span>', key: 'dataAuthConfig', page: '03_数据权限配置.html' },
+      { label: '字段权限配置<span class="menu-tag">【新增页】</span>', key: 'fieldPermission', page: '04_字段权限配置.html' },
+      { label: '敏感字段元数据维护<span class="menu-tag">【新增页】</span>', key: 'fieldMetadata', page: '05_字段元数据维护.html' },
+      { label: '统一统筹页<span class="menu-tag">【新增页】</span>', key: 'unifiedScope', page: '06_统一统筹页.html' },
+      { label: '导出中心<span class="menu-tag">【改造页】</span>', key: 'exportCenter', page: '09_导出中心.html' },
+      { label: '用户登录统计<span class="menu-tag">【改造页】</span>', key: 'userLoginStat', page: '10_用户登录统计.html' },
       { label: '功能维护' },
       { label: '菜单维护' }
     ]},
@@ -32,7 +32,7 @@ var GpmLayout = (function () {
     ]},
     { group: '业务模块' },
     { label: '车型项目管理', key: 'carModelProject', page: '07_车型项目管理.html' },
-    { label: '车型·零件关系', key: 'carPartRel', page: '11_车型零件关系.html' },
+    { label: '车型零件关系<span class="menu-tag">【新增页】</span>', key: 'carPartRel', page: '11_车型零件关系.html' },
     { label: '零件认领' },
     { label: '成本分析报表', key: 'costReport', page: '08_成本分析报表.html' },
     { label: '价格管理' },
@@ -44,6 +44,14 @@ var GpmLayout = (function () {
     if (cls) e.className = cls;
     if (html !== undefined) e.innerHTML = html;
     return e;
+  }
+
+  /* 菜单项：文字与「【新增页】/【改造页】」标记分开渲染，长文字省略、标记固定右侧，避免换行错位 */
+  function menuInner(label) {
+    var tagRe = /<span class="menu-tag">([\s\S]*?)<\/span>/;
+    var m = String(label).match(tagRe);
+    var tag = m ? '<span class="menu-tag">' + m[1] + '</span>' : '';
+    return '<span class="menu-label">' + String(label).replace(tagRe, '') + '</span>' + tag;
   }
 
   function buildSidebar(activePage) {
@@ -60,12 +68,12 @@ var GpmLayout = (function () {
       if (item.children && item.open) {
         ul.appendChild(el('li', '', '▾ ' + item.label));
         item.children.forEach(function (c) {
-          var li = el('li', 'sub' + (c.key === activePage ? ' active' : ''), '<span class="dot"></span>' + c.label);
+          var li = el('li', 'sub' + (c.key === activePage ? ' active' : ''), '<span class="dot"></span>' + menuInner(c.label));
           if (c.page) { li.onclick = function () { location.href = c.page; }; li.style.cursor = 'pointer'; }
           ul.appendChild(li);
         });
       } else {
-        var li = el('li', (item.key === activePage ? 'active' : ''), item.label);
+        var li = el('li', (item.key === activePage ? 'active' : ''), menuInner(item.label));
         if (item.page) { li.onclick = function () { location.href = item.page; }; li.style.cursor = 'pointer'; }
         ul.appendChild(li);
       }

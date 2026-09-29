@@ -43,12 +43,6 @@
         <div class="search-item"><label>功能编码：</label>
           <select id="qFunc"><option value="">全部</option><option>成本分析</option><option>价格管理</option><option>零件成本</option><option>报表中心</option><option>车型项目管理</option></select></div>
         <div class="search-item"><label>角色名称：</label><input type="text" id="qRole" placeholder="请输入角色名称"></div>
-        <div class="search-item new-col"><label>领域（采购）：</label>
-          <select id="qDomainBuy"><option value="">全部</option><option>内外饰</option><option>车身</option><option>底盘</option></select></div>
-        <div class="search-item new-col"><label>研发领域：</label>
-          <select id="qDomainCost"><option value="">全部</option><option>内外饰</option><option>车身</option><option>底盘</option><option>智联</option></select></div>
-        <div class="search-item new-col"><label>研发部门：</label>
-          <select id="qDept"><option value="">全部</option><option>车身开发部</option><option>架构开发部</option></select></div>
         <div class="search-item new-col"><label>启用扩展权限：</label>
           <select id="qExt"><option value="">全部</option><option>是</option><option>否</option></select></div>
         <div class="search-actions">
@@ -64,11 +58,6 @@
       <div class="right"><span class="toolbar-note">共 <b id="totalText">0</b> 条配置</span></div>
     </div>
 
-    <div class="alert alert-info" style="margin-top:0;">
-      <span class="ico">ⓘ</span>
-      <div><b>本次改造</b>：① 「领域」拆分为<b>采购/研发</b>两个独立口径；② <b>移除「研发部门」「功能包」「研发领域」3 个开关</b>——直接读报表对应列，<b>代码写死</b>；③ 新增<b>「启用扩展权限」开关</b>（并列维度开关）+ <b>「扩展条件」子表</b>，承载研发部门·功能包·数据版本。</div>
-    </div>
-
     <div class="table-wrap" style="flex:1;overflow:auto;min-height:0;">
       <table class="list-table">
         <thead><tr>
@@ -81,11 +70,11 @@
           <th style="width:80px;">启用品类</th>
           <th style="width:80px;">启用物料</th>
           <th style="width:80px;">启用创建人</th>
-          <th class="new-col" style="width:100px;">领域（采购）<span class="new-col-badge">更名</span></th>
-          <th style="width:100px;">品牌&国际/国内</th>
-          <th style="width:80px;">车型</th>
-          <th class="new-col" style="width:90px;">零件号前缀<span class="new-col-badge">新</span></th>
-          <th class="new-col" style="width:110px;">启用扩展权限<span class="new-col-badge">新</span></th>
+          <th class="new-col" style="width:100px;">领域（采购）<span class="new-col-badge">调整</span></th>
+          <th class="new-col" style="width:100px;">品牌&国际/国内<span class="new-col-badge">调整</span></th>
+          <th class="new-col" style="width:80px;">车型<span class="new-col-badge">调整</span></th>
+          <th class="new-col" style="width:90px;">零件号前缀<span class="new-col-badge">调整</span></th>
+          <th class="new-col" style="width:110px;">启用扩展权限<span class="new-col-badge">调整</span></th>
           <th style="min-width:90px;">创建人</th>
           <th style="width:90px;">操作</th>
         </tr></thead>
@@ -125,15 +114,15 @@
           </div>
         </div>
         <div class="form-item"><label><span class="req">*</span>优先级：</label>
-          <div class="field-col"><input type="text" id="fPriority" value="99"><div class="err">优先级必填</div>
-            <div class="muted">多角色时数据范围取并集，优先级仅保留排序语义</div>
+          <div class="field-col"><input type="text" id="fPriority" value="99">            <div class="err">优先级必填</div>
+
           </div>
         </div>
       </div>
 
       <!-- 维度开关 -->
       <div class="panel" style="margin-bottom:14px;">
-        <div class="panel-title" style="font-size:14px;">数据范围维度开关（共 10 项，含「全部」）</div>
+        <div class="panel-title" style="font-size:14px;">数据范围维度开关</div>
         <div class="panel-body">
           <div class="dim-grid" id="dimGrid"></div>
         </div>
@@ -141,40 +130,49 @@
 
       <!-- 代码写死维度（不设开关） -->
       <div class="panel" style="margin-bottom:14px;">
-        <div class="panel-title" style="font-size:14px;">不设开关的维度（代码写死，直接读报表列）</div>
+        <div class="panel-title" style="font-size:14px;">不设开关的维度</div>
         <div class="panel-body">
           <div class="dim-grid">
-            <div class="dim-cell locked"><div><div class="dim-name">研发领域</div><div class="dim-desc">报表「研发领域」列，代码写死</div></div><span class="tag tag-gray">写死</span></div>
-            <div class="dim-cell locked"><div><div class="dim-name">研发部门</div><div class="dim-desc">报表「研发部门」列，代码写死</div></div><span class="tag tag-gray">写死</span></div>
-            <div class="dim-cell locked"><div><div class="dim-name">功能包</div><div class="dim-desc">报表「功能包」列，代码写死</div></div><span class="tag tag-gray">写死</span></div>
-            <div class="dim-cell locked"><div><div class="dim-name">责任工程师（使用工程师）</div><div class="dim-desc">报表「责任工程师」列，代码写死</div></div><span class="tag tag-gray">写死</span></div>
+            <div class="dim-cell locked"><div><div class="dim-name">研发领域</div></div><span class="tag tag-gray">写死</span></div>
+            <div class="dim-cell locked"><div><div class="dim-name">研发部门</div></div><span class="tag tag-gray">写死</span></div>
+            <div class="dim-cell locked"><div><div class="dim-name">功能包</div></div><span class="tag tag-gray">写死</span></div>
+            <div class="dim-cell locked"><div><div class="dim-name">责任工程师（使用工程师）</div></div><span class="tag tag-gray">写死</span></div>
           </div>
-          <div class="muted mt8">上述维度由代码写死对应关系，业务侧不需要配置、也不提供开关。</div>
         </div>
       </div>
 
-      <!-- 维度间关系 -->
+      <!-- 维度间关系（模式开关 + 点选拼接） -->
       <div class="panel" style="margin-bottom:14px;">
         <div class="panel-title" style="font-size:14px;">维度间关系</div>
         <div class="panel-body">
-          <div class="field-col">
-            <input type="text" id="fRelExpr" placeholder="如：车型 AND 工厂 或 (车型 AND 工厂) OR 研发领域" style="width:100%;height:32px;border:1px solid #dcdfe6;border-radius:4px;padding:0 10px;">
-            <div class="err" id="relErr"></div>
-            <div class="muted">仅允许「本次已勾选的维度名」＋ AND / OR ＋ 圆括号；默认全部取并集，存量零迁移；保留原始表达式（不做中文回显）。</div>
+          <div class="flex-gap" style="margin-bottom:10px;">
+            <label class="ck"><input type="radio" name="relMode" value="union" checked onchange="switchRelMode('union')"> 全部取并（默认）</label>
+            <label class="ck"><input type="radio" name="relMode" value="custom" onchange="switchRelMode('custom')"> 自定义</label>
           </div>
-          <div class="scenario mt12" id="scenarioBox"></div>
+          <div id="relCustom" style="display:none;">
+            <div class="muted" style="margin-bottom:6px;font-size:12px;">可用维度（仅本次已勾选的维度，点击插入）</div>
+            <div id="relDims" class="flex-gap" style="flex-wrap:wrap;margin-bottom:8px;"></div>
+            <div class="flex-gap" style="flex-wrap:wrap;margin-bottom:8px;">
+              <button type="button" class="btn btn-default btn-sm" onclick="relInsert('(')">（</button>
+              <button type="button" class="btn btn-default btn-sm" onclick="relInsert(')')">）</button>
+              <button type="button" class="btn btn-default btn-sm" onclick="relInsert(' AND ')">AND</button>
+              <button type="button" class="btn btn-default btn-sm" onclick="relInsert(' OR ')">OR</button>
+              <button type="button" class="btn btn-default btn-sm" onclick="relBackspace()">退格</button>
+              <button type="button" class="btn btn-default btn-sm" onclick="relClear()">清空</button>
+            </div>
+            <input type="text" id="fRelExpr" readonly placeholder="点击上方维度与操作符拼装（不可手动输入）" style="width:100%;height:32px;border:1px solid #dcdfe6;border-radius:4px;padding:0 10px;background:#fafafa;">
+            <div class="err" id="relErr"></div>
+          </div>
         </div>
       </div>
 
       <!-- 启用扩展权限 + 扩展条件子表 -->
       <div class="panel" style="margin-bottom:4px;border-color:#b3d8ff;">
         <div class="panel-title" style="font-size:14px;background:#e3f0ff;">
-          <label class="ck" style="font-weight:600;"><input type="checkbox" id="fExtOn" onchange="toggleExt()"> 启用扩展权限 <span class="new-col-badge">新</span></label>
-          <span class="muted" style="font-weight:400;margin-left:10px;">勾选后展开「扩展条件」子表，未勾选则不读取任何扩展条件</span>
+          <label class="ck" style="font-weight:600;"><input type="checkbox" id="fExtOn" onchange="toggleExt()"> 启用扩展权限 <span class="new-col-badge">调整</span></label>
         </div>
         <div class="panel-body" id="extBox" style="display:none;">
           <div class="flex-gap" style="justify-content:space-between;margin-bottom:8px;">
-            <span class="muted">结构化条件为主、高级 SQL 兜底；承载<b>研发部门·功能包·数据版本</b>等个性化过滤</span>
             <button class="btn btn-primary btn-sm" onclick="addExtRow()">新增条件</button>
           </div>
           <table class="ext-table">
@@ -194,18 +192,16 @@
           <!-- 模式二：高级 SQL 专属操作区 -->
           <div class="sql-bar" id="sqlBar" style="display:none;">
             <div class="flex-gap" style="flex-wrap:wrap;align-items:center;">
-              <b style="font-size:13px;color:#d48806;">模式二（高级 SQL）强制校验链：</b>
+              <b style="font-size:13px;color:#d48806;">模式二（高级 SQL）</b>
               <button class="btn btn-default btn-sm" onclick="sqlCheck()">1. 语法校验</button>
               <button class="btn btn-default btn-sm" onclick="sqlDryRun()">2. 试运行</button>
               <button class="btn btn-default btn-sm" onclick="sqlDataPreview()">3. 数据预览</button>
               <button class="btn btn-default btn-sm" onclick="extImpact(sqlRowIdx())">影响预览</button>
               <button class="btn btn-default btn-sm" onclick="extRollback(sqlRowIdx())">回滚上一版本</button>
-              <span class="muted" style="font-size:12px;">（保存前须完成语法校验、试运行与数据预览）</span>
             </div>
             <div id="sqlResult" class="sql-result" style="display:none;"></div>
           </div>
 
-          <div class="muted mt8">模式二（高级 SQL）保存时强制<b>语法校验 + 试运行 + 数据预览</b>，并提供<b>影响预览</b>与<b>回滚上一版本</b>；误配导致查询报错时由引擎捕获并提示，不静默失败。</div>
         </div>
       </div>
     </div>
@@ -236,10 +232,10 @@ var DIMS = [
   { key:'enableCategory',  name:'启用品类分工权限', desc:'采购品类分工（原有）', isNew:false },
   { key:'enableMaterial',  name:'启用物料分工权限', desc:'即零件认领（原有）', isNew:false },
   { key:'enableCreated',   name:'启用创建人权限',   desc:'按创建人过滤（原有）', isNew:false },
-  { key:'enableDomainBuy', name:'启用领域权限（采购）', desc:'取统一统筹页-领域（采购）', isNew:true },
-  { key:'enableBrand',     name:'启用品牌&国际/国内权限', desc:'品牌×国际/国内组合授权', isNew:false },
-  { key:'enableCarModel',  name:'启用车型权限',     desc:'成本经理/工装项目成本管理', isNew:false },
-  { key:'enablePartPrefix',name:'启用零件号前缀',   desc:'CE 件号分组号前 4 位', isNew:false },
+  { key:'enableDomainBuy', name:'启用领域权限', desc:'取统一统筹页-领域（采购）/领域（成本）', isNew:true },
+  { key:'enableBrand',     name:'启用品牌&国际/国内权限', desc:'品牌×国际/国内组合授权', isNew:true },
+  { key:'enableCarModel',  name:'启用车型权限',     desc:'成本经理/工装项目成本管理', isNew:true },
+  { key:'enablePartPrefix',name:'启用零件号前缀',   desc:'CE 件号分组号前 4 位', isNew:true },
   { key:'enableExt',       name:'启用扩展权限',     desc:'开启后配置扩展条件子表', isNew:true }
 ];
 
@@ -276,8 +272,8 @@ function render(){
       '<td>'+yn(c.mat)+'</td>'+
       '<td>'+yn(c.cre)+'</td>'+
       '<td class="new-col">'+yn(c.domBuy)+'</td>'+
-      '<td>'+yn(c.brand)+'</td>'+
-      '<td>'+yn(c.car)+'</td>'+
+      '<td class="new-col">'+yn(c.brand)+'</td>'+
+      '<td class="new-col">'+yn(c.car)+'</td>'+
       '<td class="new-col">'+yn(c.prefix)+'</td>'+
       '<td class="new-col">'+yn(c.ext)+'</td>'+
       '<td>'+c.by+'</td>'+
@@ -299,17 +295,16 @@ function gotoPage(p){var pages=Math.max(1,Math.ceil(filtered.length/pageSize));i
 
 /* ================= 查询 ================= */
 function doSearch(){
-  var f=qFunc.value,r=qRole.value.trim(),db=qDomainBuy.value,dc=qDomainCost.value,dp=qDept.value,e=qExt.value;
+  var f=qFunc.value,r=qRole.value.trim(),e=qExt.value;
   filtered=configs.filter(function(c){
     if(f && c.func!==f)return false;
     if(r && c.role.indexOf(r)<0)return false;
-    if(db && c.domBuy!==db)return false;
     if(e && c.ext!==e)return false;
     return true;
   });
   curPage=1; render();
 }
-function resetSearch(){qFunc.value='';qRole.value='';qDomainBuy.value='';qDomainCost.value='';qDept.value='';qExt.value='';filtered=configs.slice();curPage=1;render();}
+function resetSearch(){qFunc.value='';qRole.value='';qExt.value='';filtered=configs.slice();curPage=1;render();}
 function toggleSearch(){var a=document.getElementById('searchArea'),i=document.getElementById('collapseIco');if(a.style.display==='none'){a.style.display='block';i.textContent='∧';}else{a.style.display='none';i.textContent='∨';}}
 
 /* ================= 编辑 ================= */
@@ -318,7 +313,7 @@ function buildDimGrid(){
   DIMS.forEach(function(d){
     var cell=document.createElement('div');
     cell.className='dim-cell'+(d.isNew?' v52':'');
-    cell.innerHTML='<div><div class="dim-name">'+d.name+(d.isNew?' <span class="new-col-badge">新</span>':'')+'</div><div class="dim-desc">'+d.desc+'</div></div>'+
+    cell.innerHTML='<div><div class="dim-name">'+d.name+(d.isNew?' <span class="new-col-badge">调整</span>':'')+'</div></div>'+
       '<label class="switch"><input type="checkbox" '+(dimState[d.key]?'checked':'')+' onchange="dimState[\''+d.key+'\']=this.checked;refreshScenario()"><span class="slider"></span></label>';
     grid.appendChild(cell);
   });
@@ -334,6 +329,7 @@ function openEdit(gi){
     dimState.enableBrand=c.brand==='是'; dimState.enableCarModel=c.car==='是'; dimState.enablePartPrefix=c.prefix==='是';
     dimState.enableExt=c.ext==='是';
     fFunc.value=c.func; fRole.value=c.role; fPriority.value=c.priority; fRelExpr.value=c.rel||'';
+    setRelMode(!!c.rel);
     document.getElementById('fExtOn').checked = c.ext==='是';
     if(c.ext==='是'){
       extRows=[
@@ -344,6 +340,7 @@ function openEdit(gi){
   } else {
     dimState={all:false,enableOrg:true,enableCategory:false,enableMaterial:false,enableCreated:false,enableDomainBuy:false,enableBrand:false,enableCarModel:false,enablePartPrefix:false,enableExt:false};
     fFunc.value=''; fRole.value=''; fPriority.value='99'; fRelExpr.value='';
+    setRelMode(false);
     document.getElementById('fExtOn').checked=false;
   }
   buildDimGrid(); renderExt(); toggleExt(); refreshScenario();
@@ -440,7 +437,7 @@ function sqlDryRun(){
   extRows[i].dryRunOk = true;
   sqlOut('<span class="ok">✓ 试运行通过</span>　（已执行 EXPLAIN，未写入数据）<br>'+
     '预估扫描行数：<b>12,480</b>　|　预估耗时：<b>0.32s</b>　|　是否走索引：<b>是</b><br>'+
-    '<span class="muted">试运行仅做解析与预估，不落库、不影响线上数据。</span>');
+    '');
 }
 /* 3. 数据预览 */
 function sqlDataPreview(){
@@ -454,7 +451,7 @@ function sqlDataPreview(){
     '<tr><td>PRJ-HGT-2026</td><td>昊铂GT</td><td>底盘</td><td>架构开发部</td><td>底盘结构件</td></tr>'+
     '<tr><td>PRJ-AS2026</td><td>AION S Plus</td><td>座舱</td><td>智能座舱产品线</td><td>智能座舱包</td></tr>'+
     '</tbody></table>'+
-    '<span class="muted">共命中 <b>3,214</b> 条数据；确认真实命中范围符合预期后再保存生效。</span>');
+    '<span class="muted">共命中 <b>3,214</b> 条</span>');
 }
 /* 影响预览 */
 function extImpact(i){
@@ -465,7 +462,7 @@ function extImpact(i){
     '受影响角色：<b>'+esc(document.getElementById('fRole').value||'（未选择）')+'</b><br>'+
     '命中数据量：<b>3,214</b> 条（较配置前 <span class="bad">↑ +218 条</span>）<br>'+
     '受影响页面：本次 4 张报表（功能包及采购成本达成 / 部门达成情况 / 采购成本达成 / 变化履历）<br>'+
-    '<span class="muted">影响预览仅做估算，不落库。</span>');
+    '');
 }
 /* 回滚上一版本 */
 function extRollback(i){
@@ -477,30 +474,67 @@ function extRollback(i){
   sqlOut('<span class="ok">✓ 已回滚到上一版本</span><br>条件「'+esc(r.name||'—')+'」已恢复为改前值。');
 }
 
-function refreshScenario(){
-  var on = DIMS.filter(function(d){return dimState[d.key];}).map(function(d){return d.name.replace(/^启用/,'');});
-  var box=document.getElementById('scenarioBox');
-  var dimsText = on.length? on.join('、') : '（未勾选维度）';
-  var expr = document.getElementById('fRelExpr').value.trim();
-  box.innerHTML='<b>已勾选维度：</b>'+dimsText+'<br>'+
-    '<b>当前表达式：</b>'+(expr? esc(expr) : '（空，默认全部取并集）')+'<br>'+
-    '<span class="muted">取交（AND）生效时，若某条数据该维度为空则该数据被剔除；错误提示会指明具体出错字符位置。</span>';
+/* ================= 维度间关系（全部取并 / 自定义点选拼接） ================= */
+function relSelectedDims(){
+  return DIMS.filter(function(d){ return d.key!=='all' && dimState[d.key]; });
 }
+function renderRelDims(){
+  var box=document.getElementById('relDims'); if(!box) return;
+  var ds=relSelectedDims();
+  box.innerHTML = ds.length? ds.map(function(d){
+    return '<span class="tag tag-blue" style="cursor:pointer;" onclick="relInsert(\''+d.name+'\')">'+d.name+'</span>';
+  }).join('') : '<span class="muted" style="font-size:12px;">请先在上方勾选维度</span>';
+}
+function switchRelMode(m){
+  var box=document.getElementById('relCustom');
+  box.style.display = (m==='custom')? 'block':'none';
+  if(m==='custom'){ renderRelDims(); validateRel(); }
+  else { document.getElementById('relErr').innerText=''; }
+}
+function setRelMode(custom){
+  var m = custom? 'custom':'union';
+  var r = document.querySelector('input[name="relMode"][value="'+m+'"]');
+  if(r) r.checked = true;
+  switchRelMode(m);
+}
+function relInsert(t){
+  var el=document.getElementById('fRelExpr'); el.value += t; validateRel();
+}
+function relBackspace(){
+  var el=document.getElementById('fRelExpr');
+  el.value = el.value.replace(/\s*\S+\s*$/,'').replace(/\s+$/,'');
+  validateRel();
+}
+function relClear(){ document.getElementById('fRelExpr').value=''; validateRel(); }
+function validateRel(){
+  var el=document.getElementById('fRelExpr'), err=document.getElementById('relErr');
+  if(!el||!err) return true;
+  var v=el.value.trim(); err.innerText='';
+  if(!v){ return true; }
+  var l=(v.match(/\(/g)||[]).length, r=(v.match(/\)/g)||[]).length;
+  if(l!==r){ err.innerText='括号未成对'; return false; }
+  if(/(AND|OR)\s*(AND|OR)/.test(v) || /^(AND|OR)/.test(v) || /(AND|OR)\s*$/.test(v)){ err.innerText='AND / OR 两侧需有维度'; return false; }
+  return true;
+}
+function refreshScenario(){ renderRelDims(); }
 
 function saveConfig(){
   if(!fFunc.value){alert('功能必填');return;}
   if(!fRole.value){alert('角色必填');return;}
+  if(document.querySelector('input[name="relMode"]:checked').value==='custom' && !validateRel()){
+    alert('维度间关系：' + (document.getElementById('relErr').innerText||'表达式不合法')); return;
+  }
   var ext = document.getElementById('fExtOn').checked;
   /* 模式二（高级 SQL）保存前强制校验 */
   if(ext){
     var si=sqlRowIdx();
     if(si>=0){
       var sr=extRows[si];
-      if(!(sr.val||'').trim()){ alert('模式二（高级 SQL）校验未通过：SQL 片段为空。'); return; }
+      if(!(sr.val||'').trim()){ alert('SQL 片段为空'); return; }
       var l=(sr.val.match(/\(/g)||[]).length, r=(sr.val.match(/\)/g)||[]).length;
-      if(l!==r){ alert('模式二（高级 SQL）语法校验未通过：圆括号不配对，请修正后重试。'); return; }
+      if(l!==r){ alert('圆括号不配对'); return; }
       if(!sr.dryRunOk){
-        alert('模式二（高级 SQL）请先完成【语法校验 → 试运行 → 数据预览】后再保存。');
+        alert('请先完成语法校验 / 试运行 / 数据预览');
         return;
       }
     }
@@ -510,11 +544,11 @@ function saveConfig(){
     org:dimState.enableOrg?'是':'否', cat:dimState.enableCategory?'是':'否', mat:dimState.enableMaterial?'是':'否',
     cre:dimState.enableCreated?'是':'否', domBuy:dimState.enableDomainBuy?'是':'否', brand:dimState.enableBrand?'是':'否',
     car:dimState.enableCarModel?'是':'否', prefix:dimState.enablePartPrefix?'是':'否',
-    ext:ext?'是':'否', rel:document.getElementById('fRelExpr').value.trim(), by:'董海涛'
+    ext:ext?'是':'否', rel:(document.querySelector('input[name="relMode"]:checked').value==='custom')?document.getElementById('fRelExpr').value.trim():'', by:'董海涛'
   };
   if(editIdx<0){ configs.unshift(obj); } else { Object.assign(filtered[editIdx], obj); }
   closeEdit(); doSearch();
-  alert((editIdx<0?'新增':'保存')+'成功！配置即时生效（下次登录生效）。');
+  alert((editIdx<0?'新增':'保存')+'成功！');
 }
 function closeEdit(){document.getElementById('editMask').classList.remove('show');}
 function delConfig(gi){

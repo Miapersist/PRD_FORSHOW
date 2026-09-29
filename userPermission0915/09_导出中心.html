@@ -18,22 +18,20 @@
 
     <!-- 视图切换 -->
     <div class="inner-tabs">
-      <div class="tab-btn" data-view="self" onclick="switchView('self',this)">个人<span class="muted">（我的导出）</span></div>
-      <div class="tab-btn active" data-view="all" onclick="switchView('all',this)">全量<span class="new-col-badge">新</span><span class="muted">（采购）</span></div>
-    </div>
-
-    <div class="alert alert-info" style="margin:12px 16px 0;">
-      <span class="ico">ⓘ</span>
-      <div>导出中心展示系统内的导出文件。<b>个人视图</b>＝仅当前登录人的导出记录；<b>全量视图</b>＝展示全量导出记录（含 <b>导出人 / 工号 / 研发部门 / 最后登录时间 / 登录次数</b>），<b>仅采购可见</b>（由数据权限约束）。下载按 <b>fileuploadId</b> 取件。<br><b>「最后登录时间」「登录次数」两列</b>取值同【用户登录统计】（<code>scc_log_user_trace</code>：<b>登录次数</b>取 <code>LOGIN_NUM</code>，<b>最后登录时间</b>取最近一次 <code>loginDate</code>）——<b>登录次数为 0 或长期未登录＝"没用过系统"</b>；该页完整的<b>时间区间查询与导出</b>见 <b>10_用户登录统计</b>，本页只做这两列展示。</div>
+      <div class="tab-btn" data-view="self" onclick="switchView('self',this)">个人</div>
+      <div class="tab-btn active" data-view="all" onclick="switchView('all',this)">全量<span class="new-col-badge">调整</span></div>
     </div>
 
     <div class="search-area" id="searchArea">
       <div class="search-form">
         <div class="search-item all-only"><label>导出人：</label><input type="text" id="qExporter" placeholder="姓名 / 账号"></div>
         <div class="search-item all-only"><label>工号：</label><input type="text" id="qEmpNo" placeholder="请输入工号"></div>
-        <div class="search-item all-only"><label>研发部门：</label><input type="text" id="qDept" placeholder="请输入研发部门"></div>
+        <div class="search-item all-only"><label>一级部门：</label><input type="text" id="qDept1" placeholder="请输入一级部门"></div>
+        <div class="search-item all-only"><label>二级部门：</label><input type="text" id="qDept2" placeholder="请输入二级部门"></div>
+        <div class="search-item all-only"><label>三级部门：</label><input type="text" id="qDept3" placeholder="请输入三级部门"></div>
         <div class="search-item"><label>菜单名称：</label><input type="text" id="qFunc" placeholder="请输入菜单名称"></div>
         <div class="search-item"><label>文件名称：</label><input type="text" id="qFile" placeholder="请输入文件名称"></div>
+        <div class="search-item"><label>创建时间：</label><input type="text" id="qFrom" placeholder="起始" style="width:120px;" onfocus="this.type='date'"> <span class="muted">~</span> <input type="text" id="qTo" placeholder="结束" style="width:120px;" onfocus="this.type='date'"></div>
         <div class="search-actions">
           <button class="btn btn-primary" onclick="doSearch()">查询</button>
           <button class="btn btn-default" onclick="resetSearch()">重置</button>
@@ -42,6 +40,7 @@
     </div>
 
     <div class="table-toolbar">
+      <button class="btn btn-primary" onclick="doExport()">导出</button>
       <div class="left"><span class="toolbar-note">全量视图保留「最后登录时间」「登录次数」两列（同源于【用户登录统计】）；完整的<b>起始 / 结束时间</b>区间查询与导出见【用户登录统计】页。</span></div>
       <div class="right"><span class="toolbar-note">共 <b id="totalText">0</b> 个文件</span></div>
     </div>
@@ -50,17 +49,18 @@
       <table class="list-table">
         <thead><tr>
           <th style="width:46px;">序号</th>
-          <th class="all-only" style="min-width:100px;">导出人<span class="new-col-badge">新</span></th>
-          <th class="all-only" style="width:100px;">工号<span class="new-col-badge">新</span></th>
-          <th class="all-only" style="min-width:120px;">研发部门<span class="new-col-badge">新</span></th>
-          <th class="all-only" style="width:150px;">最后登录时间<span class="new-col-badge">新</span></th>
-          <th class="all-only" style="width:110px;">登录次数<span class="new-col-badge">新</span></th>
+          <th class="all-only" style="min-width:100px;">导出人<span class="new-col-badge">调整</span></th>
+          <th class="all-only" style="width:100px;">工号<span class="new-col-badge">调整</span></th>
+          <th class="all-only" style="width:110px;">一级部门<span class="new-col-badge">调整</span></th>
+          <th class="all-only" style="width:110px;">二级部门<span class="new-col-badge">调整</span></th>
+          <th class="all-only" style="width:110px;">三级部门<span class="new-col-badge">调整</span></th>
+          <th class="all-only" style="width:150px;">最后登录时间<span class="new-col-badge">调整</span></th>
+          <th class="all-only" style="width:110px;">登录次数<span class="new-col-badge">调整</span></th>
+          <th class="all-only" style="width:150px;">角色<span class="new-col-badge">调整</span></th>
           <th style="min-width:150px;">菜单名称</th>
           <th style="min-width:200px;">文件名称</th>
-          <th style="width:90px;">文件大小</th>
           <th style="width:80px;">状态</th>
           <th style="width:150px;">创建时间</th>
-          <th style="width:150px;">结束时间</th>
           <th style="width:80px;">操作</th>
         </tr></thead>
         <tbody id="tbody"></tbody>
@@ -68,7 +68,6 @@
     </div>
 
     <div class="pagination-bar">
-      <span class="muted">「个人 / 全量」由视图切换；全量视图仅采购可见。「最后登录时间」「登录次数」取自【用户登录统计】，按同一区间口径汇总。</span>
     </div>
   </div>
 </div>
@@ -88,12 +87,12 @@ GpmLayout.init({
 
 /* mock：导出记录（全量） */
 var rows = [
-  { exporter:'冷丹丹', emp:'00130778', dept:'采购部',   func:'价格目录',     file:'价格目录导出_20260921.xlsx',   size:'2.3 MB',  status:'完成',  cdate:'2026-09-21 09:12', edate:'2026-09-21 09:13', last:'2026-09-22 08:41', cnt:326, me:true },
-  { exporter:'孙倩',   emp:'00180123', dept:'采购部',   func:'物料维护',     file:'物料清单导出_20260920.xlsx',   size:'8.1 MB',  status:'完成',  cdate:'2026-09-20 16:40', edate:'2026-09-20 16:45', last:'2026-09-20 16:38', cnt:210, me:false },
-  { exporter:'王慧芬', emp:'00120456', dept:'成本工程部', func:'成本分析报表', file:'部门达成情况_20260920.xlsx',   size:'1.2 MB',  status:'完成',  cdate:'2026-09-20 10:05', edate:'2026-09-20 10:06', last:'2026-09-20 10:02', cnt:488, me:false },
-  { exporter:'刘德',   emp:'00150234', dept:'车身开发部', func:'成本分析报表', file:'零件成本明细_20260919.xlsx',   size:'12.6 MB', status:'完成',  cdate:'2026-09-19 14:22', edate:'2026-09-19 14:35', last:'2026-09-19 14:18', cnt:156, me:false },
-  { exporter:'冷丹丹', emp:'00130778', dept:'采购部',   func:'在途成本',     file:'在途成本导出_20260918.xlsx',   size:'—',       status:'生成中', cdate:'2026-09-18 17:30', edate:'', last:'2026-09-22 08:41', cnt:326, me:true },
-  { exporter:'周敏',   emp:'00190456', dept:'财务部',   func:'价格审批单',   file:'价格审批单_20260918.xlsx',     size:'640 KB',  status:'失败',  cdate:'2026-09-18 11:02', edate:'2026-09-18 11:02', last:'2026-06-30 15:20', cnt:12, me:false }
+  { exporter:'冷丹丹', emp:'00130778', d1:'采购本部', d2:'采购部',     d3:'采购一科',   role:'采购科长',   func:'价格目录',     file:'价格目录导出_20260921.xlsx', status:'完成',  cdate:'2026-09-21 09:12', last:'2026-09-22 08:41', cnt:326, me:true },
+  { exporter:'孙倩',   emp:'00180123', d1:'采购本部', d2:'采购部',     d3:'采购二科',   role:'采购员',     func:'物料维护',     file:'物料清单导出_20260920.xlsx', status:'完成',  cdate:'2026-09-20 16:40', last:'2026-09-20 16:38', cnt:210, me:false },
+  { exporter:'王慧芬', emp:'00120456', d1:'采购本部', d2:'成本工程部', d3:'成本管理科', role:'成本经理',   func:'成本分析报表', file:'部门达成情况_20260920.xlsx', status:'完成',  cdate:'2026-09-20 10:05', last:'2026-09-20 10:02', cnt:488, me:false },
+  { exporter:'刘德',   emp:'00150234', d1:'研发总院', d2:'车身开发部', d3:'内外饰科',   role:'使用工程师', func:'成本分析报表', file:'零件成本明细_20260919.xlsx', status:'完成',  cdate:'2026-09-19 14:22', last:'2026-09-19 14:18', cnt:156, me:false },
+  { exporter:'冷丹丹', emp:'00130778', d1:'采购本部', d2:'采购部',     d3:'采购一科',   role:'采购科长',   func:'在途成本',     file:'在途成本导出_20260918.xlsx', status:'生成中', cdate:'2026-09-18 17:30', last:'2026-09-22 08:41', cnt:326, me:true },
+  { exporter:'周敏',   emp:'00190456', d1:'财务本部', d2:'财务部',     d3:'资金管理科', role:'财务专员',   func:'价格审批单',   file:'价格审批单_20260918.xlsx',   status:'失败',  cdate:'2026-09-18 11:02', last:'2026-06-30 15:20', cnt:12, me:false }
 ];
 var view = 'all';   /* 默认演示「全量」视图 */
 var filtered = rows.slice();
@@ -110,20 +109,27 @@ function switchView(v, el){
 }
 function doSearch(){
   var ex=document.getElementById('qExporter').value.trim(), emp=document.getElementById('qEmpNo').value.trim(),
-      dp=document.getElementById('qDept').value.trim(), fn=document.getElementById('qFunc').value.trim(),
-      fl=document.getElementById('qFile').value.trim();
+      d1=document.getElementById('qDept1').value.trim(), d2=document.getElementById('qDept2').value.trim(),
+      d3=document.getElementById('qDept3').value.trim(), fn=document.getElementById('qFunc').value.trim(),
+      fl=document.getElementById('qFile').value.trim(),
+      from=document.getElementById('qFrom').value, to=document.getElementById('qTo').value;
   filtered = rows.filter(function(r){
     if(view==='self' && !r.me) return false;
     if(ex && r.exporter.indexOf(ex)<0) return false;
     if(emp && r.emp.indexOf(emp)<0) return false;
-    if(dp && r.dept.indexOf(dp)<0) return false;
+    if(d1 && r.d1.indexOf(d1)<0) return false;
+    if(d2 && r.d2.indexOf(d2)<0) return false;
+    if(d3 && r.d3.indexOf(d3)<0) return false;
     if(fn && r.func.indexOf(fn)<0) return false;
     if(fl && r.file.indexOf(fl)<0) return false;
+    var cd=(r.cdate||'').slice(0,10);
+    if(from && cd<from) return false;
+    if(to && cd>to) return false;
     return true;
   });
   render();
 }
-function resetSearch(){ ['qExporter','qEmpNo','qDept','qFunc','qFile'].forEach(function(id){document.getElementById(id).value='';}); doSearch(); }
+function resetSearch(){ ['qExporter','qEmpNo','qDept1','qDept2','qDept3','qFunc','qFile','qFrom','qTo'].forEach(function(id){document.getElementById(id).value='';}); doSearch(); }
 function render(){
   var tb=document.getElementById('tbody'); tb.innerHTML='';
   filtered.forEach(function(r,i){
@@ -136,22 +142,24 @@ function render(){
       '<td>'+(i+1)+'</td>'+
       '<td class="all-only text-left">'+r.exporter+'</td>'+
       '<td class="all-only">'+r.emp+'</td>'+
-      '<td class="all-only text-left">'+r.dept+'</td>'+
+      '<td class="all-only text-left">'+r.d1+'</td>'+
+      '<td class="all-only text-left">'+r.d2+'</td>'+
+      '<td class="all-only text-left">'+r.d3+'</td>'+
       '<td class="all-only">'+(r.last||'<span class="muted">—</span>')+'</td>'+
       '<td class="all-only">'+(r.cnt!=null?r.cnt:'<span class="muted">—</span>')+'</td>'+
+      '<td class="all-only text-left">'+r.role+'</td>'+
       '<td class="text-left">'+r.func+'</td>'+
       '<td class="text-left">'+r.file+'</td>'+
-      '<td>'+(r.size||'—')+'</td>'+
       '<td>'+stTag+'</td>'+
       '<td>'+r.cdate+'</td>'+
-      '<td>'+(r.edate||'<span class="muted">—</span>')+'</td>'+
       '<td>'+dl+'</td>';
     tb.appendChild(tr);
   });
   document.querySelectorAll('.all-only').forEach(function(x){ x.style.display = (view==='all')? '' : 'none'; });
   document.getElementById('totalText').innerText=filtered.length;
 }
-function downloadFile(name){ alert('下载：'+name+'\n（原型占位，实际走 FILE_DOWNLOAD?fileuploadId=xxx）'); }
+function downloadFile(name){ alert('下载：'+name); }
+function doExport(){ alert('已导出 导出记录-YYYYMMDD.xlsx（按当前筛选条件导出全部命中数据）'); }
 
 doSearch();
 </script>

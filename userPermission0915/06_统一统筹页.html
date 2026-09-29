@@ -21,22 +21,18 @@
   <div class="panel" style="flex:1;display:flex;flex-direction:column;min-height:0;border:none;border-radius:0;">
     <!-- 页内 Tab -->
     <div class="inner-tabs">
-      <div class="tab-btn active" data-tab="car" onclick="switchTab('car',this)">车型<span class="muted">（人员↔车型）</span></div>
-      <div class="tab-btn" data-tab="brand" onclick="switchTab('brand',this)">品牌&国际/国内<span class="muted">（人员↔品牌×国际/国内）</span></div>
-      <div class="tab-btn" data-tab="domainBuy" onclick="switchTab('domainBuy',this)">领域（采购）<span class="new-col-badge">新</span></div>
-    </div>
-
-    <div class="alert alert-info" style="margin:12px 16px 0;">
-      <span class="ico">ⓘ</span>
-      <div>本页集中维护「<b>人员 ↔ 可见对象</b>」范围，性质为<b>「补位」</b>——能读权威来源的读来源、给已有来源做人工补充、无来源的人工维护，<b>不与来源页双份维护</b>。数据来源分两类：<b>上游同步（只读）</b>与<b>人工新增/导入（可编辑）</b>。<b>组织架构不在本页配置</b>——由 IAM 下发，承载于【用户权限】页；<b>不设「零件号」Tab</b>（与零件认领重复）。<br><b>车型 Tab</b> 的人员-车型关系取【车型项目管理】（带出 + 人工补充，取并集），<b>该「人 ↔ 车型」同时是【价格目录】按「人 → 车型 → 零件」授权的人员层来源</b>（零件层＝车型↔零件，见【车型·零件关系】页）；对<b>共用件</b>（一零件多车型共用）——价格目录本体保持 <b>1 条</b>（不复制、不拆行），"1 件 → N 车型"仅体现于【车型↔零件】关系表（<b>M:N</b>），权限"<b>命中任一车型即可见</b>"，<b>分摊不落价格目录</b>（交成本 BOM 卷积）。</div>
+      <div class="tab-btn active" data-tab="car" onclick="switchTab('car',this)">车型</div>
+      <div class="tab-btn" data-tab="brand" onclick="switchTab('brand',this)">品牌&国际/国内</div>
+      <div class="tab-btn" data-tab="domainBuy" onclick="switchTab('domainBuy',this)">领域（采购）</div>
+      <div class="tab-btn" data-tab="domainCost" onclick="switchTab('domainCost',this)">领域（成本）</div>
     </div>
 
     <div class="search-area" id="searchArea">
       <div class="search-form">
         <div class="search-item"><label>人员账号/姓名：</label><input type="text" id="qUser" placeholder="账号或姓名"></div>
-        <div class="search-item" id="qObjWrap"><label id="qObjLabel">可见对象：</label><input type="text" id="qObj" placeholder="输入对象关键词"></div>
+        <div class="search-item" id="qObjWrap"><label id="qObjLabel">可见对象：</label><select id="qObj"><option value="">全部</option></select></div>
         <div class="search-item"><label>数据来源：</label>
-          <select id="qSrc"><option value="">全部</option><option>上游同步</option><option>人工新增/导入</option></select></div>
+          <select id="qSrc"><option value="">全部</option><option>上游同步</option><option>人工新增</option></select></div>
         <div class="search-actions">
           <button class="btn btn-primary" onclick="doSearch()">查询</button>
           <button class="btn btn-default" onclick="resetSearch()">重置</button>
@@ -99,16 +95,16 @@
           <div class="field-col" style="flex:1;">
             <div class="flex-gap">
               <input type="text" id="fObjSearch" placeholder="搜索对象（支持模糊）" style="flex:1;" oninput="renderPickList()">
-              <button class="btn btn-primary btn-sm" onclick="openPick()">选择对象…</button>
+              <button class="btn btn-primary btn-sm" id="pickBtn" onclick="openPick()">选择对象…</button>
             </div>
             <div id="objTags" class="obj-tags mt8"></div>
             <div class="err" id="objErr">请至少选择一个对象</div>
-            <div class="muted mt8">可见对象通过<b>多选弹窗</b>选择，<b>不支持自由输入</b>；已选项以标签展示，可增删。</div>
+            <div class="muted mt8" id="objHint">可见对象通过组件选择，<b>不支持自由输入</b>；已选项以标签展示，可增删。</div>
           </div>
         </div>
       </div>
       <div class="form-row">
-        <div class="form-item"><label>数据来源：</label><input type="text" value="人工新增/导入" readonly></div>
+        <div class="form-item"><label>数据来源：</label><input type="text" value="人工新增" readonly></div>
         <div class="form-item"><label>生效时间：</label><input type="date" id="fStart"></div>
       </div>
     </div>
@@ -147,7 +143,7 @@ GpmLayout.init({
   activeTab: 'unifiedScope'
 });
 
-/* 三个 Tab 的对象字典（已取消「零件号」Tab） */
+/* 四个 Tab 的对象字典（已取消「零件号」Tab；新增「领域（成本）」Tab） */
 var TAB_CONF = {
   car:       { objLabel:'可见车型：',       colHead:'可见车型集合',         dict:[
                  {code:'AIONY',   name:'AION Y'}, {code:'AIONSPLUS', name:'AION S Plus'},
@@ -165,7 +161,11 @@ var TAB_CONF = {
                  {code:'ZL',   name:'智联'},   {code:'JCAQ',name:'集成安全'}, {code:'GY',  name:'工艺'},
                  {code:'DLJC', name:'动力集成'}, {code:'DLBU',name:'动力BU'}, {code:'ZC',  name:'座舱'},
                  {code:'CPSJ', name:'产品数据'}, {code:'SH',  name:'售后'}],
-               tagCls:'tag-orange', pickTitle:'选择领域（采购）（原字典 DOMAIN_PERMISSION_MAPPING 作废，本页统一维护）' }
+               tagCls:'tag-orange', pickTitle:'选择领域（采购）（原字典 DOMAIN_PERMISSION_MAPPING 作废，本页统一维护）' },
+  domainCost:{ objLabel:'领域（成本）：',     colHead:'可见领域（成本）集合', dict:[
+                 {code:'NWS',  name:'内外饰'}, {code:'CS',  name:'车身'}, {code:'DP',  name:'底盘'},
+                 {code:'ZL',   name:'智联'},   {code:'GY',  name:'工艺'}, {code:'CPSJ',name:'产品数据'}],
+               tagCls:'tag-red', pickTitle:'选择领域（成本）（本页统一维护）' }
 };
 var curTab = 'car';
 
@@ -174,16 +174,20 @@ var data = {
   car: [
     { acc:'zhangsw', name:'张少伟', role:'成本管理员', objs:['AION Y','传祺M8'], src:'上游同步', time:'2026-08-01', readonly:true },
     { acc:'liude',   name:'刘德',   role:'使用工程师', objs:['AION Y'], src:'上游同步', time:'2026-08-01', readonly:true },
-    { acc:'chenjing',name:'陈静',   role:'使用工程师', objs:['AION S Plus','昊铂GT'], src:'人工新增/导入', time:'2026-08-12', readonly:false },
-    { acc:'fenghua', name:'冯华',   role:'使用工程师', objs:['昊铂GT'], src:'人工新增/导入', time:'2026-08-15', readonly:false }
+    { acc:'chenjing',name:'陈静',   role:'使用工程师', objs:['AION S Plus','昊铂GT'], src:'人工新增', time:'2026-08-12', readonly:false },
+    { acc:'fenghua', name:'冯华',   role:'使用工程师', objs:['昊铂GT'], src:'人工新增', time:'2026-08-15', readonly:false }
   ],
   brand: [
-    { acc:'zhangsw', name:'张少伟', role:'成本管理员', objs:['传祺-国内','埃安-国内'], src:'人工新增/导入', time:'2026-08-05', readonly:false },
-    { acc:'wanghf',  name:'王慧芬', role:'成本经理',   objs:['传祺-国内','传祺-国际','埃安-国内','埃安-国际'], src:'人工新增/导入', time:'2026-08-01', readonly:false }
+    { acc:'zhangsw', name:'张少伟', role:'成本管理员', objs:['传祺-国内','埃安-国内'], src:'人工新增', time:'2026-08-05', readonly:false },
+    { acc:'wanghf',  name:'王慧芬', role:'成本经理',   objs:['传祺-国内','传祺-国际','埃安-国内','埃安-国际'], src:'人工新增', time:'2026-08-01', readonly:false }
   ],
   domainBuy: [
-    { acc:'wanghf',  name:'王慧芬', role:'成本经理',   objs:['内外饰','车身'], src:'人工新增/导入', time:'2026-09-15', readonly:false },
-    { acc:'chenjing',name:'陈静',   role:'使用工程师', objs:['内外饰'],        src:'人工新增/导入', time:'2026-09-15', readonly:false }
+    { acc:'wanghf',  name:'王慧芬', role:'成本经理',   objs:['内外饰','车身'], src:'人工新增', time:'2026-09-15', readonly:false },
+    { acc:'chenjing',name:'陈静',   role:'使用工程师', objs:['内外饰'],        src:'人工新增', time:'2026-09-15', readonly:false }
+  ],
+  domainCost: [
+    { acc:'lengdd',  name:'冷丹丹', role:'采购科长',   objs:['车身','底盘'], src:'人工新增', time:'2026-09-20', readonly:false },
+    { acc:'yangys',  name:'杨衍穗', role:'财务科长',   objs:['内外饰'],      src:'人工新增', time:'2026-09-20', readonly:false }
   ]
 };
 var filtered = [];
@@ -198,10 +202,28 @@ function switchTab(tab, el){
   document.getElementById('qObjLabel').innerText = conf.objLabel;
   document.getElementById('objColHead').innerText = conf.colHead;
   document.getElementById('fObjLabel').innerText = conf.objLabel;
+  /* 查询条件「可见对象」随 Tab 重建下拉枚举 */
+  var sel = document.getElementById('qObj');
+  if(sel && sel.tagName==='SELECT'){
+    sel.innerHTML = '<option value="">全部</option>' + conf.dict.map(function(d){
+      return '<option value="'+d.code+'">'+d.name+'</option>';
+    }).join('');
+  }
+  /* 选择控件说明随 Tab 变化 */
+  var hint = document.getElementById('objHint');
+  if(hint){
+    hint.innerHTML = tab==='car'
+      ? '车型通过<b>放大镜组件</b>选择（展示车型编码、车型名称、唯一 id 编码），<b>不支持自由输入</b>；已选项以标签展示，可增删。'
+      : (tab==='brand'
+        ? '品牌×国际/国内通过<b>多选弹窗</b>选择（字典固定 8 项），<b>不支持自由输入</b>；已选项以标签展示，可增删。'
+        : '领域通过<b>下拉多选</b>选择，<b>不支持自由输入</b>；已选项以标签展示，可增删。');
+  }
+  var pickBtn = document.getElementById('pickBtn');
+  if(pickBtn) pickBtn.innerText = tab==='car' ? '🔍 放大镜选择' : '选择对象…';
   curPage=1; doSearch();
 }
 function srcTag(s, readonly){
-  return readonly? '<span class="tag tag-gray">上游同步(只读)</span>' : '<span class="tag tag-blue">人工新增/导入</span>';
+  return readonly? '<span class="tag tag-gray">上游同步(只读)</span>' : '<span class="tag tag-blue">人工新增</span>';
 }
 function objName(code){
   var d = TAB_CONF[curTab].dict.filter(function(x){return x.code===code;})[0];
@@ -243,11 +265,11 @@ function renderPage(){
 function gotoPage(p){var pages=Math.max(1,Math.ceil(filtered.length/pageSize));if(p<1)p=1;if(p>pages)p=pages;curPage=p;render();}
 
 function doSearch(){
-  var u=qUser.value.trim(), o=qObj.value.trim(), s=qSrc.value;
+  var u=qUser.value.trim(), o=qObj.value, s=qSrc.value;
   var list = data[curTab]||[];
   filtered = list.filter(function(r){
     if(u && r.acc.indexOf(u)<0 && r.name.indexOf(u)<0)return false;
-    if(o && !r.objs.some(function(x){return objName(x).indexOf(o)>=0 || x.indexOf(o)>=0;}))return false;
+    if(o && r.objs.indexOf(objName(o))<0 && r.objs.indexOf(o)<0)return false;
     if(s && r.src!==s)return false;
     return true;
   });
@@ -332,7 +354,7 @@ function saveScope(){
   var acc=parts[0], name=parts[1]||'', role=parts[2]||'—';
   // 去重：同一人员+同一对象不重复添加
   var dup = (data[curTab]||[]).some(function(r){ return r.acc===acc && editIdx<0; });
-  var obj={acc:acc,name:name,role:role,objs:tempObjs.slice(),src:'人工新增/导入',time:document.getElementById('fStart').value||today(),readonly:false};
+  var obj={acc:acc,name:name,role:role,objs:tempObjs.slice(),src:'人工新增',time:document.getElementById('fStart').value||today(),readonly:false};
   if(editIdx<0){ data[curTab].unshift(obj); } else { Object.assign(filtered[editIdx],obj); }
   closeEdit(); doSearch(); alert(editIdx<0?'新增成功！':'保存成功！');
 }
@@ -342,9 +364,10 @@ function delScope(gi){
   if(r.readonly){ alert('上游同步数据不可删除'); return; }
   if(confirm('确认删除 '+r.name+' 的该条可见范围吗？')){ var idx=data[curTab].indexOf(r); if(idx>-1)data[curTab].splice(idx,1); doSearch(); }
 }
-function doExport(){ alert('已导出 统一统筹-'+TAB_CONF[curTab].colHead+'-YYYYMMDD.xlsx\n范围：'+filtered.length+' 条（按当前筛选条件导出全部命中数据，非当前页）'); }
+function doExport(){ alert('已导出 统一统筹-'+TAB_CONF[curTab].colHead+'-YYYYMMDD.xlsx'); }
 
-doSearch();
+/* 初始化：默认「车型」Tab（同时填充可见对象下拉与选择控件说明） */
+switchTab('car');
 </script>
 </body>
 </html>

@@ -41,22 +41,16 @@
       </div>
     </div>
 
-    <div class="alert alert-info" style="margin:12px 16px 0;">
-      <span class="ico">ⓘ</span>
-      <div><b>本页定位：车型 / 项目的「项目级主数据 + 人员 / 品牌关系」</b>（车型项目、MTOC、PL 人员、品牌、项目状态），<b>不再是「车型 ↔ 零件」关系的唯一来源</b>。<br><b>零件级「车型 ↔ 零件」关系已独立到【车型·零件关系】页维护</b>——含数据源（量产车型 IBOM / 埃安 GBOM 直连、传祺 GBM 通过 BOM 接入、新车型通过 PMS 接入）与<b>人工补录（直接新增零件关系）</b>。本页下方零件清单（零件 Tab）为<b>只读预览 + 字段来源</b>——其<b>车型编码 / 车型分类 / 采购类型</b>即【车型·零件关系】列表的取数字段。</div>
-    </div>
-
     <div class="table-toolbar">
       <button class="btn btn-primary" onclick="tip('新增车型项目')">新增</button>
       <button class="btn btn-default" onclick="doExport()">导出</button>
-      <button class="btn btn-default" onclick="location.href='11_车型零件关系.html'">车型·零件关系维护</button>
+      <button class="btn btn-default" onclick="location.href='11_车型零件关系.html'">车型零件关系维护</button>
       <div class="right"><span class="toolbar-note">共 <b id="totalText">0</b> 个项目</span></div>
     </div>
 
     <div class="table-wrap" style="flex:1;overflow:auto;min-height:0;" id="projList"></div>
 
     <div class="pagination-bar">
-      <span class="muted">展开项目可查看该项目下的零件清单（零件 Tab，只读预览，供数据权限 Provider 取数与字段来源）；零件级关系的维护与人工补录见【车型·零件关系】页。</span>
     </div>
   </div>
 </div>
@@ -76,7 +70,7 @@ GpmLayout.init({
 
 /* Mock：项目 + 零件（来源标记）；mclass＝车型分类（枚举：国内燃油车 / 海外车）、
    buyType＝采购类型（零件类型代码 W / AW / Z），与车型名称 / 车型编码 / 车型状态 / 品牌
-   一并为【车型·零件关系】列表的取数字段 */
+   一并为【车型零件关系】列表的取数字段 */
 var projects = [
   { code:'AY3', model:'AION Y', brand:'埃安', mclass:'海外车', pl:'张少伟', status:'量产', mtoc:'MTOC-AY-01',
     parts:[
@@ -150,7 +144,7 @@ function doSearch(){
 }
 function resetSearch(){qProj.value='';qModel.value='';qBrand.value='';qStatus.value='';filtered=projects.slice();render();}
 function tip(m){alert(m);}
-function doExport(){ alert('已导出车型项目及零件关系.xlsx（含车型↔零件映射，供数据权限取数核对）'); }
+function doExport(){ alert('已导出车型项目及零件关系.xlsx'); }
 
 render();
 </script>
