@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>整车成本达成情况报表 - GPM系统</title>
+<link rel="stylesheet" href="_common/gpm.css">
+<style>
+  .rpt-search{display:flex;flex-wrap:wrap;align-items:center;gap:10px 22px;padding:12px 16px;background:#fff;border-bottom:1px solid #e5e6eb;}
+  .rpt-search .item{display:flex;align-items:center;gap:6px;font-size:13px;color:#606266;}
+  .rpt-search .item>label{white-space:nowrap;color:#606266;}
+  .rpt-search select,.rpt-search input[type=date]{height:30px;padding:0 8px;border:1px solid #dcdfe6;border-radius:4px;font-size:13px;color:#606266;outline:none;}
+  .rpt-search .hint{font-size:11px;color:#909399;line-height:1.35;max-width:230px;}
+  .btn-row{display:flex;align-items:center;gap:8px;padding:8px 16px;background:#fff;border-bottom:1px solid #e5e6eb;flex-wrap:wrap;}
+  .btn-jump{height:30px;padding:0 14px;border:none;border-radius:4px;background:#1869e1;color:#fff;font-size:13px;cursor:pointer;white-space:nowrap;}
+  .btn-jump:hover{filter:brightness(1.06);}
+  .btn-jump.ghost{background:#fff;color:#1869e1;border:1px solid #1869e1;}
+  .sec-title{display:flex;align-items:center;gap:6px;font-size:14px;font-weight:bold;color:#1869e1;margin:12px 0 6px;}
+  .sec-title:before{content:'';width:4px;height:14px;border-radius:2px;background:#1869e1;}
+  .sec-title .sub{font-size:12px;font-weight:normal;color:#909399;}
+  .inner-tabs{margin:0 0 10px;padding:0;background:transparent;border-bottom:1px solid #e5e6eb;}
+  .inner-tabs .tab-btn .sub{font-size:11px;color:#909399;margin-left:6px;font-weight:normal;}
+  .tab-pane{display:none;}
+  .tab-pane.active{display:block;}
+  .rpt-table{border-collapse:collapse;white-space:nowrap;font-size:12px;min-width:100%;}
+  .rpt-table th,.rpt-table td{border:1px solid #ebeef5;padding:6px 8px;text-align:center;color:#606266;}
+  .rpt-table thead th{background:#f7f8fa;font-weight:500;color:#4b5563;}
+  .rpt-table thead tr:first-child th{background:#eef3fb;}
+  .rpt-table td.num{text-align:right;font-family:monospace;}
+  .rpt-table tr.desc-row td{background:#fafafa;color:#9aa0a6;font-style:italic;font-size:11px;text-align:left;white-space:normal;line-height:1.35;min-width:90px;}
+  .rpt-table tr.desc-row td.desc-key{color:#606266;font-weight:bold;font-style:normal;padding:6px 8px;max-width:34px;}
+  .rpt-table th.hl,.rpt-table td.hl{background:#fff8d6;}
+  .rpt-table th.hl{background:#fdf3c8;}
+  .rpt-table tbody tr:hover td{background:#f5f9ff;}
+  .rpt-table tbody tr:hover td.hl{background:#fdf6cf;}
+  .foot-note{padding:8px 16px 18px;font-size:12px;color:#909399;line-height:1.7;}
+  .foot-note b{color:#1869e1;}
+</style>
+</head>
+<body>
+
+<template id="page-body">
+<div class="page" style="padding:0;display:flex;flex-direction:column;overflow:hidden;">
+  <div class="panel" style="flex:1;display:flex;flex-direction:column;min-height:0;border:none;border-radius:0;">
+
+    <!-- 筛选区 -->
+    <div class="rpt-search">
+      <div class="item"><label>项目代号：</label>
+        <select id="qProj" onchange="doSearch()">
+          <option value="T60-Y3">T60-Y3</option>
+          <option value="A66">A66</option>
+        </select>
+      </div>
+      <div class="item"><label>数据来源：</label>
+        <select id="qSource" onchange="onSourceChange()">
+          <option value="release">发布版</option>
+          <option value="realtime">实时版</option>
+        </select>
+        <span class="hint">（仅成本经理可看实时版，其他不能看）</span>
+      </div>
+      <div class="item"><label>发布日期：</label>
+        <input type="date" id="qDateFrom" value="2026-09-01">
+        <span>—</span>
+        <input type="date" id="qDateTo" value="2026-09-29">
+        <span class="hint" id="dateHint">（仅成本经理、成本管理组组长、成本品牌组长、成本工程车型经理-管理员可选。默认只看每个项目最新一版）</span>
+      </div>
+      <div class="search-actions">
+        <button class="btn btn-primary" onclick="doSearch()">查询</button>
+        <button class="btn btn-default" onclick="resetSearch()">重置</button>
+      </div>
+    </div>
+
+    <!-- 跳转与导出 -->
+    <div class="btn-row">
+      <button class="btn-jump ghost" onclick="doExport()">导出</button>
+      <button class="btn-jump" onclick="jump('部门成本达成情况报表')">跳转到部门报表</button>
+      <button class="btn-jump" onclick="jump('功能包及采购科成本达成情况报表')">跳转到功能包及采购科报表</button>
+      <button class="btn-jump" onclick="jump('采购级成本达成情况报表')">跳转到采购级报表</button>
+      <button class="btn-jump" onclick="jump('成本BOM')">跳转到成本BOM</button>
+      <button class="btn-jump" onclick="jump('成本变化履历')">跳转到成本变化履历</button>
+      <span class="hint" style="margin-left:8px;">（角色没有对应报表的权限时，跳转按钮不可选）</span>
+    </div>
+
+    <!-- 三块报表 -->
+    <div class="table-wrap" id="rptWrap" style="flex:1;overflow:auto;min-height:0;padding:0 16px 4px;">
+
+      <!-- Tab 切换（筛选区在 Tab 之上，切换 Tab 保留筛选值） -->
+      <div class="inner-tabs" id="rptTabs">
+        <div class="tab-btn active" data-tab="mat" onclick="switchTab('mat')">物料成本<span class="sub">MTOC / 配置级</span></div>
+        <div class="tab-btn" data-tab="tool" onclick="switchTab('tool')">工装费<span class="sub">项目代号级</span></div>
+        <div class="tab-btn" data-tab="dev" onclick="switchTab('dev')">同步开发费<span class="sub">项目代号级</span></div>
+      </div>
+
+      <!-- Tab1 物料成本 -->
+      <div class="tab-pane active" id="paneMat">
+      <div class="sec-title">物料成本<span class="sub">MTOC / 配置级，一行一配置</span></div>
+      <table class="rpt-table" id="tblMat">
+        <thead>
+          <tr>
+            <th rowspan="2">品牌</th>
+            <th rowspan="2">产品系列</th>
+            <th rowspan="2">项目代号</th>
+            <th rowspan="2">项目名称</th>
+            <th rowspan="2">L4编码</th>
+            <th rowspan="2">研发车型代码</th>
+            <th rowspan="2">MTOC</th>
+            <th rowspan="2">配置名称</th>
+            <th rowspan="2">配置类型</th>
+            <th rowspan="2">销量占比</th>
+            <th rowspan="2">下一阶段阀门</th>
+            <th rowspan="2">下个阀门时间</th>
+            <th rowspan="2">ADCP阀门时间</th>
+            <th rowspan="2">PDT经理</th>
+            <th rowspan="2">项目总监</th>
+            <th rowspan="2">成本经理</th>
+            <th rowspan="2">目标成本</th>
+            <th rowspan="2">应该成本</th>
+            <th rowspan="2" class="hl">实时成本<br>（含返利）</th>
+            <th rowspan="2">实时成本</th>
+            <th rowspan="2">市况<br>（已在实时成本内）</th>
+            <th rowspan="2">比返</th>
+            <th rowspan="2">固返</th>
+            <th rowspan="2">ADCP预测成本<br>（含返利）</th>
+            <th rowspan="2">ADCP预测成本</th>
+            <th colspan="2">应该成本-目标成本</th>
+            <th colspan="2">实时成本（含返利）-应该成本</th>
+            <th colspan="2">实时成本（含返利）-目标成本</th>
+            <th colspan="2">ADCP预测成本（含返利）-目标成本</th>
+            <th rowspan="2">采购价格获取率(%)</th>
+            <th rowspan="2">发布类型</th>
+            <th rowspan="2">归档阀门</th>
+            <th rowspan="2">发布时间</th>
+            <th rowspan="2">BOM生成时间</th>
+          </tr>
+          <tr>
+            <th>差异1</th><th>偏差率1</th>
+            <th>差异2</th><th>偏差率2</th>
+            <th>差异3</th><th>偏差率3</th>
+            <th>差异4</th><th>偏差率4</th>
+          </tr>
+        </thead>
+        <tbody id="tbodyMat"></tbody>
+      </table>
+      </div>
+
+      <!-- Tab2 工装费 -->
+      <div class="tab-pane" id="paneTool">
+      <div class="sec-title">工装费<span class="sub">项目代号级，一行一项目</span></div>
+      <table class="rpt-table" id="tblTool">
+        <thead>
+          <tr>
+            <th rowspan="2">品牌</th>
+            <th rowspan="2">产品系列</th>
+            <th rowspan="2">项目代号</th>
+            <th rowspan="2">项目名称</th>
+            <th rowspan="2">目标成本</th>
+            <th rowspan="2">应该成本</th>
+            <th rowspan="2">实时成本</th>
+            <th rowspan="2">ADCP预测成本</th>
+            <th rowspan="2">设变预留</th>
+            <th colspan="2">应该成本-目标成本</th>
+            <th colspan="2">实时成本-应该成本</th>
+            <th colspan="2">实时成本-目标成本</th>
+            <th colspan="2">ADCP预测成本-目标成本</th>
+            <th rowspan="2">采购价格获取率(%)</th>
+          </tr>
+          <tr>
+            <th>差异1</th><th>偏差率1</th>
+            <th>差异2</th><th>偏差率2</th>
+            <th>差异3</th><th>偏差率3</th>
+            <th>差异4</th><th>偏差率4</th>
+          </tr>
+        </thead>
+        <tbody id="tbodyTool"></tbody>
+      </table>
+      </div>
+
+      <!-- Tab3 同步开发费 -->
+      <div class="tab-pane" id="paneDev">
+      <div class="sec-title">同步开发费<span class="sub">项目代号级，一行一项目</span></div>
+      <table class="rpt-table" id="tblDev">
+        <thead>
+          <tr>
+            <th rowspan="2">品牌</th>
+            <th rowspan="2">产品系列</th>
+            <th rowspan="2">项目代号</th>
+            <th rowspan="2">项目名称</th>
+            <th rowspan="2">目标成本</th>
+            <th rowspan="2">应该成本</th>
+            <th rowspan="2">实时成本</th>
+            <th rowspan="2">ADCP预测成本</th>
+            <th rowspan="2">设变预留</th>
+            <th colspan="2">应该成本-目标成本</th>
+            <th colspan="2">实时成本-应该成本</th>
+            <th colspan="2">实时成本-目标成本</th>
+            <th colspan="2">ADCP预测成本-目标成本</th>
+            <th rowspan="2">采购价格获取率(%)</th>
+          </tr>
+          <tr>
+            <th>差异1</th><th>偏差率1</th>
+            <th>差异2</th><th>偏差率2</th>
+            <th>差异3</th><th>偏差率3</th>
+            <th>差异4</th><th>偏差率4</th>
+          </tr>
+        </thead>
+        <tbody id="tbodyDev"></tbody>
+      </table>
+      </div>
+
+      <div class="foot-note" id="verNote"></div>
+    </div>
+  </div>
+</div>
+</template>
+
+<script src="_common/gpm-layout.js"></script>
+<script>
+GpmLayout.init({
+  activePage: 'costAchieveReport',
+  breadcrumb: ['首页', '成本报表', '整车成本达成情况报表'],
+  tabs: [
+    { key:'home', label:'首页', closable:false },
+    { key:'costAchieveReport', label:'整车成本达成情况报表' }
+  ],
+  activeTab: 'costAchieveReport'
+});
+
+/* ================= 字段说明（与表头逐列对齐） ================= */
+var DESC_MAT = [
+  '取车型基础信息','PBI 接口按 L4 编码取 L2.5 名称','取车型基础信息','取车型基础信息','整车目标设定页签','企业级BOM→项目配置管理',
+  '企业级BOM→项目配置管理','企业级BOM→项目配置管理','由「配置类型」改名','单个配置占总配置销量比','计划完成时间最早一条的「阀门评审点」',
+  '计划完成时间最早一条的「计划完成时间」','阀门评审点 DP1/TR6，优先实际完成时间','项目管理下的 PDT 经理','项目主线系统角色','项目主线系统角色',
+  '整车合集（目标成本-零件×用量×供货比率÷100）','整车合集（应该成本-零件×用量×供货比率÷100）','实时成本 − 比返 − 固返','采购价→应该成本→目标成本→评估成本',
+  '市况联动页面按时间区间累加','实时成本-比返（减项）','实时成本-固返（减项）','实时成本（含返利）+ 在途成本','实时成本 + 在途成本',
+  '应该成本 − 目标成本','差异1 ÷ 目标成本','实时成本（含返利） − 应该成本','差异2 ÷ 应该成本',
+  '实时成本（含返利） − 目标成本','差异3 ÷ 目标成本','ADCP预测成本（含返利） − 目标成本','差异4 ÷ 目标成本',
+  '采购价格条数 ÷ 总条数 × 100%，仅发布版','发布版取归档记录；实时版置空','TR3-TR6；定常发布为空','发布版取归档记录「发布时间」','实时版取成本BOM版本号'
+];
+var DESC_PROJ = [
+  '项目主线系统 → 车型基础信息','PBI 接口按 L4 编码取 L2.5 名称','取车型基础信息','取车型基础信息',
+  '整车目标设定「工装费总目标」','成本BOM整车合集（应该成本-工装费）+ 目标分解设变预留','成本BOM整车合集（实时成本-工装费）+ 设变预留',
+  '整车合集（ADCP预测成本-工装费）+ 设变预留','目标分解工装费设变预留',
+  '应该成本 − 目标成本','差异1 ÷ 目标成本','实时成本 − 应该成本','差异2 ÷ 应该成本',
+  '实时成本 − 目标成本','差异3 ÷ 目标成本','ADCP预测成本 − 目标成本','差异4 ÷ 目标成本',
+  '工装取值类型为采购价格的条数 ÷ 总条数 × 100%'
+];
+var DESC_DEV = [
+  '项目主线系统 → 车型基础信息','PBI 接口按 L4 编码取 L2.5 名称','取车型基础信息','取车型基础信息',
+  '整车目标设定「开发费总目标」','成本BOM整车合集（应该成本-同步开发费）+ 目标分解设变预留','成本BOM整车合集（实时成本-同步开发费）+ 设变预留',
+  '整车合集（ADCP预测成本-同步开发费）+ 设变预留','目标分解同步开发费设变预留',
+  '应该成本 − 目标成本','差异1 ÷ 目标成本','实时成本 − 应该成本','差异2 ÷ 应该成本',
+  '实时成本 − 目标成本','差异3 ÷ 目标成本','ADCP预测成本 − 目标成本','差异4 ÷ 目标成本',
+  '同步开发费取值类型为采购价格的条数 ÷ 总条数 × 100%'
+];
+
+/* ================= Mock 数据（发布版 / T60-Y3） ================= */
+var NUM_MAT = [17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32];  // 物料块 0-based 数值列
+var NUM_PROJ = [4,5,6,7,8,9,10,11,12,13,14,15,16,17];             // 工装/开发费块 0-based 数值列
+var MAT_ROWS = [
+  ['传祺','GS8','T60-Y3','GS8 2026款','','DRS170T','JU2P-0A5-00-W7-A','T60-Y3 2.0TGDI 8AT 两驱豪华版（5座）-26款_刃影白_暗夜凌影','主销派生','20%','TR6','-','2026-06-30','','陈迪铖','喻鑫',
+   '58,600.00','59,200.00','59,880.00','60,180.00','1,270.00','300.00','0.00','61,100.00','61,400.00',
+   '600.00','1.02%','680.00','1.15%','1,280.00','2.18%','2,500.00','4.27%','96.5%','定常发布','TR3','2026-08-19 16:07:29','2026-08-19 16:07:29'],
+  ['传祺','GS8','T60-Y3','GS8 2026款','','DRS171T','JU2P-0A7-00-W7-A','T60-Y3 2.0TGDI 8AT 两驱豪华智联版（7座）-26款_刃影白_暗夜凌影','主销派生','35%','TR6','-','2026-06-30','','陈迪铖','喻鑫',
+   '62,400.00','62,900.00','63,760.00','64,020.00','1,310.00','260.00','0.00','64,980.00','65,200.00',
+   '500.00','0.80%','860.00','1.37%','1,360.00','2.18%','2,580.00','4.13%','96.5%','定常发布','TR3','2026-08-19 16:07:29','2026-08-19 16:07:29'],
+  ['传祺','GS8','T60-Y3','GS8 2026款','','DRS172T','JU2P-0B5-00-B1-A','T60-Y3 2.0TGDI 8AT 四驱豪华版（5座）-26款_典雅黑_暗夜凌影','普通派生','30%','TR6','-','2026-06-30','','陈迪铖','喻鑫',
+   '68,900.00','69,600.00','70,300.00','70,640.00','1,420.00','340.00','0.00','71,500.00','71,800.00',
+   '700.00','1.02%','700.00','1.01%','1,400.00','2.03%','2,600.00','3.77%','96.5%','定常发布','TR3','2026-08-19 16:07:29','2026-08-19 16:07:29'],
+  ['传祺','GS8','T60-Y3','GS8 2026款','','DRS173T','JU2P-0C5-00-B1-A','T60-Y3 2.0TGDI 8AT 四驱智联版（7座）-26款_典雅黑_暗夜凌影','普通派生','15%','TR6','-','2026-06-30','','陈迪铖','喻鑫',
+   '72,100.00','72,800.00','73,520.00','73,880.00','1,480.00','360.00','0.00','74,600.00','74,900.00',
+   '700.00','0.97%','720.00','0.99%','1,420.00','1.97%','2,500.00','3.47%','96.5%','定常发布','TR3','2026-08-19 16:07:29','2026-08-19 16:07:29']
+];
+var TOOL_ROWS = [
+  ['传祺','GS8','T60-Y3','GS8 2026款','12,000,000.00','12,300,000.00','12,500,000.00','12,800,000.00','500,000.00',
+   '300,000.00','2.50%','200,000.00','1.63%','500,000.00','4.17%','800,000.00','6.67%','88.0%']
+];
+var DEV_ROWS = [
+  ['传祺','GS8','T60-Y3','GS8 2026款','8,600,000.00','8,820,000.00','8,950,000.00','9,120,000.00','320,000.00',
+   '220,000.00','2.56%','130,000.00','1.47%','350,000.00','4.07%','520,000.00','6.05%','0.0%']
+];
+
+function descRow(descArr){
+  var tr = document.createElement('tr');
+  tr.className = 'desc-row';
+  var td0 = document.createElement('td');
+  td0.className = 'desc-key';
+  td0.colSpan = 1;
+  td0.textContent = '字段说明';
+  tr.appendChild(td0);
+  for (var i = 0; i < descArr.length - 1; i++) {
+    var td = document.createElement('td');
+    td.textContent = descArr[i + 1] || '';
+    tr.appendChild(td);
+  }
+  return tr;
+}
+
+function dataRow(arr, numIdx){
+  var tr = document.createElement('tr');
+  arr.forEach(function(v, i){
+    var td = document.createElement('td');
+    td.textContent = v;
+    if (numIdx.indexOf(i) >= 0) td.className = 'num';
+    if (i === 18) td.className = (td.className + ' hl').trim();   // 实时成本（含返利）高亮
+    tr.appendChild(td);
+  });
+  return tr;
+}
+
+function render(){
+  var t1 = document.getElementById('tbodyMat'); t1.innerHTML = '';
+  t1.appendChild(descRow(DESC_MAT));
+  MAT_ROWS.forEach(function(r){ t1.appendChild(dataRow(r, NUM_MAT)); });
+
+  var t2 = document.getElementById('tbodyTool'); t2.innerHTML = '';
+  t2.appendChild(descRow(DESC_PROJ));
+  TOOL_ROWS.forEach(function(r){ t2.appendChild(dataRow(r, NUM_PROJ)); });
+
+  var t3 = document.getElementById('tbodyDev'); t3.innerHTML = '';
+  t3.appendChild(descRow(DESC_DEV));
+  DEV_ROWS.forEach(function(r){ t3.appendChild(dataRow(r, NUM_PROJ)); });
+}
+
+/* ================= Tab 切换（切换 Tab 保留筛选值） ================= */
+var TAB_PANE = { mat:'paneMat', tool:'paneTool', dev:'paneDev' };
+var TAB_NAME = { mat:'物料成本（MTOC / 配置级）', tool:'工装费（项目代号级）', dev:'同步开发费（项目代号级）' };
+var curTab = 'mat';
+
+function switchTab(key){
+  curTab = key;
+  Object.keys(TAB_PANE).forEach(function(k){
+    var pane = document.getElementById(TAB_PANE[k]);
+    if (pane) pane.classList.toggle('active', k === key);
+  });
+  document.querySelectorAll('#rptTabs .tab-btn').forEach(function(b){
+    b.classList.toggle('active', b.getAttribute('data-tab') === key);
+  });
+  // 筛选区不重建，项目代号 / 数据来源 / 发布日期已选值天然保留
+  updateNote();
+}
+
+/* ================= 筛选与版本 ================= */
+function onSourceChange(){
+  var isRealtime = document.getElementById('qSource').value === 'realtime';
+  ['qDateFrom','qDateTo'].forEach(function(id){
+    var el = document.getElementById(id);
+    el.disabled = isRealtime;
+    el.style.background = isRealtime ? '#f5f7fa' : '#fff';
+    el.style.color = isRealtime ? '#c0c4cc' : '#606266';
+  });
+  document.getElementById('dateHint').innerHTML = isRealtime
+    ? '（实时版取最新动态数据，随成本BOM刷新；发布日期置灰不可选）'
+    : '（仅成本经理、成本管理组组长、成本品牌组长、成本工程车型经理-管理员可选。默认只看每个项目最新一版）';
+  updateNote();
+}
+function updateNote(){
+  var src = document.getElementById('qSource');
+  var label = src.options[src.selectedIndex].text;
+  var rt = src.value === 'realtime';
+  document.getElementById('verNote').innerHTML =
+    '当前 Tab：<b>' + TAB_NAME[curTab] + '</b>　|　数据来源：<b>' + label + '</b>　|　项目代号：<b>' +
+    document.getElementById('qProj').value + '</b>　|　' +
+    (rt ? '实时版随成本BOM刷新同步，不展示数据更新时间' : '发布版为归档快照，冻结全部字段，每周归档一次') +
+    '　|　切换 Tab 时筛选条件与已选值保持不变。';
+}
+function doSearch(){ updateNote(); render(); }
+function resetSearch(){
+  document.getElementById('qProj').value = 'T60-Y3';
+  document.getElementById('qSource').value = 'release';
+  onSourceChange();
+}
+function doExport(){ alert('已导出【整车成本达成情况报表】当前筛选结果（xlsx）'); }
+function jump(name){ alert('跳转到：' + name); }
+
+render();
+onSourceChange();
+</script>
+</body>
+</html>
