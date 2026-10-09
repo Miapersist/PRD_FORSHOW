@@ -6,7 +6,7 @@
 <title>车型零件关系 - GPM系统</title>
 <link rel="stylesheet" href="_common/gpm.css">
 <style>
-  .src-pms{ background:#f4ecfd; color:#7d4fd6; }
+  .src-ebom{ background:#f4ecfd; color:#7d4fd6; }
   .share-badge{ background:#fdf6ec; color:#e6a23c; margin-left:4px; }
   .mono{ font-family:Consolas, Monaco, "Courier New", monospace; }
 </style>
@@ -25,7 +25,7 @@
         <div class="search-item"><label>车型状态：</label>
           <select id="qStatus"><option value="">全部</option><option>量产</option><option>新车型</option><option>在研</option></select></div>
         <div class="search-item"><label>来源：</label>
-          <select id="qSrc"><option value="">全部</option><option>IBOM</option><option>埃安GBOM</option><option>GBM-BOM</option><option>PMS</option><option>人工补录</option></select></div>
+          <select id="qSrc"><option value="">全部</option><option>GBM-BOM（传祺）</option><option>GBOM-BOM（埃安）</option><option>IBOM-超级BOM</option><option>EBOM-车型项目管理</option><option>人工补录</option></select></div>
         <div class="search-item"><label>零件编号：</label><input type="text" id="qPart" placeholder="请输入零件编号 / 零件名称"></div>
         <div class="search-actions">
           <button class="btn btn-primary" onclick="doSearch()">查询</button>
@@ -126,27 +126,27 @@ GpmLayout.init({
    车型级字段（车型名称 / 车型编码 / 车型分类 / 车型状态）与零件级字段（零件编号 / 零件名称 / 采购类型）
    均取自【车型项目管理】的零件 Tab；brand 仅用于筛选，不在列表展示。 */
 var rels = [
-  { model:'AION Y',      mcode:'AY3',    mclass:'海外车',     status:'量产',   brand:'埃安', part:'MTOC-A1001', name:'前门内饰板',  buyType:'AW', src:'埃安GBOM', by:'系统',   time:'2026-09-20 02:10' },
-  { model:'AION Y',      mcode:'AY3',    mclass:'海外车',     status:'量产',   brand:'埃安', part:'MTOC-A2001', name:'仪表板总成',  buyType:'W',  src:'IBOM',     by:'系统',   time:'2026-09-20 02:10' },
+  { model:'AION Y',      mcode:'AY3',    mclass:'海外车',     status:'量产',   brand:'埃安', part:'MTOC-A1001', name:'前门内饰板',  buyType:'AW', src:'GBOM-BOM（埃安）', by:'系统',   time:'2026-09-20 02:10' },
+  { model:'AION Y',      mcode:'AY3',    mclass:'海外车',     status:'量产',   brand:'埃安', part:'MTOC-A2001', name:'仪表板总成',  buyType:'W',  src:'IBOM-超级BOM',     by:'系统',   time:'2026-09-20 02:10' },
   { model:'AION Y',      mcode:'AY3',    mclass:'海外车',     status:'量产',   brand:'埃安', part:'MTOC-A3001', name:'座椅骨架',    buyType:'AW', src:'人工补录', by:'孙倩',   time:'2026-09-21 14:02' },
-  { model:'AION V',      mcode:'AV1',    mclass:'海外车',     status:'量产',   brand:'埃安', part:'MTOC-E1001', name:'电池包上盖',  buyType:'W',  src:'IBOM',     by:'系统',   time:'2026-09-20 02:10' },
-  { model:'AION S Plus', mcode:'AS1',    mclass:'海外车',     status:'新车型', brand:'埃安', part:'MTOC-B1001', name:'前保险杠',    buyType:'AW', src:'PMS',      by:'系统',   time:'2026-09-18 03:00' },
-  { model:'AION S Plus', mcode:'AS1',    mclass:'海外车',     status:'新车型', brand:'埃安', part:'MTOC-B2001', name:'中控显示屏',  buyType:'W',  src:'PMS',      by:'系统',   time:'2026-09-18 03:00' },
-  { model:'传祺M8',      mcode:'A88',    mclass:'国内燃油车', status:'量产',   brand:'传祺', part:'MTOC-A1001', name:'前门内饰板',  buyType:'AW', src:'GBM-BOM',  by:'系统',   time:'2026-09-19 01:30' },
-  { model:'传祺M8',      mcode:'A88',    mclass:'国内燃油车', status:'量产',   brand:'传祺', part:'MTOC-C2001', name:'第三排座椅',  buyType:'W',  src:'GBM-BOM',  by:'系统',   time:'2026-09-19 01:30' },
+  { model:'AION V',      mcode:'AV1',    mclass:'海外车',     status:'量产',   brand:'埃安', part:'MTOC-E1001', name:'电池包上盖',  buyType:'W',  src:'IBOM-超级BOM',     by:'系统',   time:'2026-09-20 02:10' },
+  { model:'AION S Plus', mcode:'AS1',    mclass:'海外车',     status:'新车型', brand:'埃安', part:'MTOC-B1001', name:'前保险杠',    buyType:'AW', src:'EBOM-车型项目管理',      by:'系统',   time:'2026-09-18 03:00' },
+  { model:'AION S Plus', mcode:'AS1',    mclass:'海外车',     status:'新车型', brand:'埃安', part:'MTOC-B2001', name:'中控显示屏',  buyType:'W',  src:'EBOM-车型项目管理',      by:'系统',   time:'2026-09-18 03:00' },
+  { model:'传祺M8',      mcode:'A88',    mclass:'国内燃油车', status:'量产',   brand:'传祺', part:'MTOC-A1001', name:'前门内饰板',  buyType:'AW', src:'GBM-BOM（传祺）',  by:'系统',   time:'2026-09-19 01:30' },
+  { model:'传祺M8',      mcode:'A88',    mclass:'国内燃油车', status:'量产',   brand:'传祺', part:'MTOC-C2001', name:'第三排座椅',  buyType:'W',  src:'GBM-BOM（传祺）',  by:'系统',   time:'2026-09-19 01:30' },
   { model:'传祺GS8',     mcode:'A30-I',  mclass:'国内燃油车', status:'量产',   brand:'传祺', part:'MTOC-G1001', name:'中控显示屏',  buyType:'W',  src:'人工补录', by:'冷丹丹', time:'2026-09-21 15:20' },
   { model:'昊铂HT',      mcode:'AH8',    mclass:'海外车',     status:'量产',   brand:'昊铂', part:'MTOC-F1001', name:'电动尾门',    buyType:'Z',  src:'人工补录', by:'周敏',   time:'2026-09-19 10:30' },
   { model:'昊铂GT',      mcode:'A66',    mclass:'海外车',     status:'在研',   brand:'昊铂', part:'MTOC-D1001', name:'激光雷达支架', buyType:'Z',  src:'人工补录', by:'赵磊',   time:'2026-09-22 09:10' }
 ];
 
 var SRC_TAG = {
-  'IBOM':'tag-blue',
-  '埃安GBOM':'tag-green',
-  'GBM-BOM':'tag-orange',
-  'PMS':'src-pms',
+  'GBM-BOM（传祺）':'tag-orange',
+  'GBOM-BOM（埃安）':'tag-green',
+  'IBOM-超级BOM':'tag-blue',
+  'EBOM-车型项目管理':'src-ebom',
   '人工补录':'tag-gray'
 };
-var AUTO_SRC = ['IBOM','埃安GBOM','GBM-BOM','PMS'];
+var AUTO_SRC = ['GBM-BOM（传祺）','GBOM-BOM（埃安）','IBOM-超级BOM','EBOM-车型项目管理'];
 
 var filtered = rels.slice();
 
