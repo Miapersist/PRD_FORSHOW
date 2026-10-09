@@ -41,7 +41,7 @@
 
     <div class="table-toolbar">
       <button class="btn btn-primary" onclick="doExport()">导出</button>
-      <div class="left"><span class="toolbar-note">全量视图保留「最后登录时间」「登录次数」两列（同源于【用户登录统计】）；完整的<b>起始 / 结束时间</b>区间查询与导出见【用户登录统计】页。</span></div>
+      <div class="left"><span class="toolbar-note">全量视图保留「最后登录时间」「登录次数」两列（同源于【用户登录统计】）；本页<b>不提供文件下载</b>（系统不支持导出文件留存），仅做记录查看。</span></div>
       <div class="right"><span class="toolbar-note">共 <b id="totalText">0</b> 个文件</span></div>
     </div>
 
@@ -61,7 +61,6 @@
           <th style="min-width:200px;">文件名称</th>
           <th style="width:80px;">状态</th>
           <th style="width:150px;">创建时间</th>
-          <th style="width:80px;">操作</th>
         </tr></thead>
         <tbody id="tbody"></tbody>
       </table>
@@ -133,9 +132,6 @@ function resetSearch(){ ['qExporter','qEmpNo','qDept1','qDept2','qDept3','qFunc'
 function render(){
   var tb=document.getElementById('tbody'); tb.innerHTML='';
   filtered.forEach(function(r,i){
-    var dl = r.status==='完成'
-      ? '<span class="export-dl" onclick="downloadFile(\''+r.file+'\')">下载</span>'
-      : '<span class="export-dl disabled">下载</span>';
     var stTag = '<span class="tag '+(r.status==='完成'?'tag-green':(r.status==='生成中'?'tag-blue':'tag-red'))+'">'+r.status+'</span>';
     var tr=document.createElement('tr');
     tr.innerHTML =
@@ -151,14 +147,12 @@ function render(){
       '<td class="text-left">'+r.func+'</td>'+
       '<td class="text-left">'+r.file+'</td>'+
       '<td>'+stTag+'</td>'+
-      '<td>'+r.cdate+'</td>'+
-      '<td>'+dl+'</td>';
+      '<td>'+r.cdate+'</td>';
     tb.appendChild(tr);
   });
   document.querySelectorAll('.all-only').forEach(function(x){ x.style.display = (view==='all')? '' : 'none'; });
   document.getElementById('totalText').innerText=filtered.length;
 }
-function downloadFile(name){ alert('下载：'+name); }
 function doExport(){ alert('已导出 导出记录-YYYYMMDD.xlsx（按当前筛选条件导出全部命中数据）'); }
 
 doSearch();

@@ -32,6 +32,8 @@
           <select id="qDept2"><option value="">全部</option><option>车身开发部</option><option>架构开发部</option><option>智联开发部</option><option>成本工程部</option></select></div>
         <div class="search-item new-col"><label>三级部门：</label>
           <select id="qDept3"><option value="">全部</option><option>内外饰科</option><option>底盘科</option><option>成本管理科</option></select></div>
+        <div class="search-item new-col"><label>科室：</label>
+          <select id="qSect"><option value="">全部</option><option>内外饰科</option><option>底盘科</option><option>成本管理科</option><option>采购一科</option><option>采购二科</option><option>车身科</option><option>智能座舱科</option><option>资金管理科</option><option>GPM运维科</option></select></div>
         <div class="search-item new-col"><label>在职状态：</label>
           <select id="qStatus"><option value="">全部</option><option>在职</option><option>离职</option></select></div>
         <div class="search-item new-col"><label>上级领导：</label><input type="text" id="qLeader" placeholder="请输入领导姓名"></div>
@@ -70,6 +72,7 @@
           <th class="new-col" style="min-width:100px;">一级部门<span class="new-col-badge">调整</span></th>
           <th class="new-col" style="min-width:100px;">二级部门<span class="new-col-badge">调整</span></th>
           <th class="new-col" style="min-width:100px;">三级部门<span class="new-col-badge">调整</span></th>
+          <th class="new-col" style="min-width:100px;">科室<span class="new-col-badge">调整</span></th>
           <th class="new-col" style="min-width:96px;">上级领导<span class="new-col-badge">调整</span></th>
           <th class="new-col" style="min-width:96px;">上上级领导<span class="new-col-badge">调整</span></th>
           <th class="new-col" style="min-width:90px;">岗位<span class="new-col-badge">调整</span></th>
@@ -132,6 +135,7 @@
           <div class="form-item"><label>一级部门：</label><input type="text" id="fD1" readonly placeholder="由IAM下发"></div>
           <div class="form-item"><label>二级部门：</label><input type="text" id="fD2" readonly placeholder="由IAM下发"></div>
           <div class="form-item"><label>三级部门：</label><input type="text" id="fD3" readonly placeholder="由IAM下发"></div>
+          <div class="form-item"><label>科室：</label><input type="text" id="fSect" readonly placeholder="由IAM下发"></div>
         </div>
         <div class="form-row new-col">
           <div class="form-item"><label>上级领导：</label><input type="text" id="fLeader" readonly placeholder="由IAM下发（部长）"></div>
@@ -261,7 +265,7 @@ var users = [
   { acc:'jiangtao', emp:'00250456', gac:'GAC1001778', name:'姜涛', phone:'138****0015', email:'jiangtao@gac.com.cn', d1:'研发总院', d2:'车身开发部', d3:'车身科', post:'研发工程师', status:'离职', leave:'2026-05-12', prePost:'', preTime:'', roles:['使用工程师'], type:'BUYER' }
 ];
 var ALL_ROLES = ['成本管理员','成本系长','成本科长','成本经理','采购员','采购系长','采购科长','财务专员','财务科长','领域经理','部门经理','使用工程师','PL','生准担当'];
-users.forEach(function(u){ if(u.leader===undefined){ u.leader=(u.d1==='研发总院')?'研发体系部长':''; u.leader2=(u.d1==='研发总院')?'研发总院本部长':''; } });
+users.forEach(function(u){ if(u.leader===undefined){ u.leader=(u.d1==='研发总院')?'研发体系部长':''; u.leader2=(u.d1==='研发总院')?'研发总院本部长':''; } if(u.sect===undefined) u.sect=u.d3||''; });
 var filtered = users.slice();
 var curPage=1, pageSize=15, editIdx=-1;
 var orgRows=[], roleRows=[];
@@ -288,6 +292,7 @@ function render(){
       '<td class="new-col">'+u.d1+'</td>'+
       '<td class="new-col">'+u.d2+'</td>'+
       '<td class="new-col">'+u.d3+'</td>'+
+      '<td class="new-col">'+(u.sect||'')+'</td>'+
       '<td class="new-col">'+(u.leader||'<span class="muted">—</span>')+'</td>'+
       '<td class="new-col">'+(u.leader2||'<span class="muted">—</span>')+'</td>'+
       '<td class="new-col">'+u.post+'</td>'+
@@ -318,12 +323,13 @@ function gotoPage(p){var pages=Math.max(1,Math.ceil(filtered.length/pageSize));i
 /* ================= 查询 ================= */
 function doSearch(){
   var u=document.getElementById('qUser').value.trim(),
-      d1=qDept1.value, d2=qDept2.value, d3=qDept3.value, st=qStatus.value,
+      d1=qDept1.value, d2=qDept2.value, d3=qDept3.value, sc=document.getElementById('qSect').value, st=qStatus.value,
       sd=document.getElementById('qStart').value, ro=qRole.value,
       ld=document.getElementById('qLeader').value.trim(), ld2=document.getElementById('qLeader2').value.trim();
   filtered=users.filter(function(x){
     if(u && x.acc.indexOf(u)<0) return false;
     if(d1 && x.d1!==d1)return false; if(d2 && x.d2!==d2)return false; if(d3 && x.d3!==d3)return false;
+    if(sc && (x.sect||'')!==sc)return false;
     if(st && x.status!==st)return false;
     if(sd && (x.start||'2021-08-26')!==sd) return false;
     if(ld && (x.leader||'').indexOf(ld)<0) return false;
@@ -333,7 +339,7 @@ function doSearch(){
   });
   curPage=1; render();
 }
-function resetSearch(){['qUser','qStart','qLeader','qLeader2'].forEach(function(id){document.getElementById(id).value='';});['qDept1','qDept2','qDept3','qStatus','qRole'].forEach(function(id){document.getElementById(id).value='';});filtered=users.slice();curPage=1;render();}
+function resetSearch(){['qUser','qStart','qLeader','qLeader2'].forEach(function(id){document.getElementById(id).value='';});['qDept1','qDept2','qDept3','qSect','qStatus','qRole'].forEach(function(id){document.getElementById(id).value='';});filtered=users.slice();curPage=1;render();}
 function toggleSearch(){var a=document.getElementById('searchArea'),i=document.getElementById('collapseIco');if(a.style.display==='none'){a.style.display='block';i.textContent='∧';}else{a.style.display='none';i.textContent='∨';}}
 function tip(m){alert(m);}
 function doExportCustom(){ alert('自定义导出'); }
@@ -346,7 +352,7 @@ function openEdit(gi){
   fUser.value=u.acc; fUser.readOnly = gi>=0;
   fName.value=u.name; fPhone.value=u.phone||'138****0000'; fEmail.value=u.email||(u.acc+'@gac.com.cn');
   fEmpNo.value=u.emp; fGacCode.value=u.gac||''; fCompany.value='广汽集团'; fPost.value=u.post;
-  fD1.value=u.d1; fD2.value=u.d2; fD3.value=u.d3;
+  fD1.value=u.d1; fD2.value=u.d2; fD3.value=u.d3; document.getElementById('fSect').value=u.sect||'';
   fLeader.value=u.leader||''; fLeader2.value=u.leader2||'';
   fStatus.value=u.status; fLeave.value=u.leave||''; fPrePost.value=u.prePost||''; fPreTime.value=u.preTime||'';
   document.getElementById('fStart').value = u.start||today();

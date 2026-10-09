@@ -24,8 +24,8 @@
         <div class="search-item"><label>用户：</label><input type="text" id="qUser" placeholder="姓名 / 账号"></div>
         <div class="search-item"><label>工号：</label><input type="text" id="qEmp" placeholder="请输入工号"></div>
         <div class="search-item"><label>研发部门：</label><input type="text" id="qDept" placeholder="请输入研发部门"></div>
-        <div class="search-item"><label>起始时间：</label><input type="date" id="qFrom" value="2026-01-01"></div>
-        <div class="search-item"><label>结束时间：</label><input type="date" id="qTo" value="2026-09-22"></div>
+        <div class="search-item"><label>登出开始时间：</label><input type="date" id="qFrom" value="2026-01-01"></div>
+        <div class="search-item"><label>登出结束时间：</label><input type="date" id="qTo" value="2026-09-22"></div>
         <div class="search-actions">
           <button class="btn btn-primary" onclick="doSearch()">查询</button>
           <button class="btn btn-default" onclick="resetSearch()">重置</button>
@@ -35,8 +35,6 @@
 
     <div class="table-toolbar">
       <div class="left">
-        <button class="btn btn-primary" onclick="doExport()">导出</button>
-        <span class="toolbar-note">导出当前查询结果（Excel 清单）</span>
       </div>
       <div class="right"><span class="toolbar-note">共 <b id="totalText">0</b> 个用户</span></div>
     </div>
@@ -51,7 +49,7 @@
           <th style="width:120px;">累计登录次数</th>
           <th style="width:120px;">累计在线时间</th>
           <th style="width:150px;">最后登录时间</th>
-          <th style="width:150px;">最后登出时间</th>
+          <th style="width:150px;">最近登出时间</th>
           <th style="width:80px;">操作</th>
         </tr></thead>
         <tbody id="tbody"></tbody>
@@ -145,9 +143,6 @@ function showDetail(emp, user){
   if(!d){ s += '（无明细）'; }
   else { d.forEach(function(x){ s += x.in+' ~ '+x.out+'　在线 '+x.dur+'　IP '+x.ip+'\n'; }); }
   alert(s);
-}
-function doExport(){
-  alert('导出：'+filtered.length+' 条');
 }
 
 doSearch();

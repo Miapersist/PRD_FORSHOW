@@ -114,96 +114,108 @@
           </div>
         </div>
         <div class="form-item"><label><span class="req">*</span>优先级：</label>
-          <div class="field-col"><input type="text" id="fPriority" value="99">            <div class="err">优先级必填</div>
-
+          <div class="field-col"><input type="text" id="fPriority" value="99"><div class="err">优先级必填</div></div>
+        </div>
+        <div class="form-item"><label>全部数据权限：</label>
+          <div class="field-col">
+            <select id="fAll" onchange="onAllChange()">
+              <option value="N" selected>否（按下方维度过滤）</option>
+              <option value="Y">是（不加任何过滤条件）</option>
+            </select>
           </div>
         </div>
       </div>
+      <div id="allWarn" class="alert alert-warn" style="display:none;margin:0 0 12px;">已开启「全部数据权限」：运行时不加任何数据范围过滤，下方维度与表达式将被忽略。</div>
 
       <!-- 维度开关 -->
       <div class="panel" style="margin-bottom:14px;">
-        <div class="panel-title" style="font-size:14px;">数据范围维度开关</div>
+        <div class="panel-title" style="font-size:14px;">数据范围维度开关 <span style="font-size:12px;color:#909399;font-weight:normal;">启用后的维度才参与字段映射与交并集</span></div>
         <div class="panel-body">
           <div class="dim-grid" id="dimGrid"></div>
         </div>
       </div>
 
-      <!-- 代码写死维度（不设开关） -->
+      <!-- 数据过滤字段映射 -->
       <div class="panel" style="margin-bottom:14px;">
-        <div class="panel-title" style="font-size:14px;">不设开关的维度</div>
+        <div class="panel-title" style="font-size:14px;">数据过滤字段映射 <span style="font-size:12px;color:#909399;font-weight:normal;">替代业务代码硬编码；未配置字段 / SQL 的维度不参与过滤</span></div>
         <div class="panel-body">
-          <div class="dim-grid">
-            <div class="dim-cell locked"><div><div class="dim-name">研发领域</div></div><span class="tag tag-gray">写死</span></div>
-            <div class="dim-cell locked"><div><div class="dim-name">研发部门</div></div><span class="tag tag-gray">写死</span></div>
-            <div class="dim-cell locked"><div><div class="dim-name">功能包</div></div><span class="tag tag-gray">写死</span></div>
-            <div class="dim-cell locked"><div><div class="dim-name">责任工程师（使用工程师）</div></div><span class="tag tag-gray">写死</span></div>
+          <table class="ext-table">
+            <thead><tr>
+              <th style="width:76px;">生效状态</th>
+              <th style="width:130px;">权限维度</th>
+              <th style="width:150px;">取值变量（来源）</th>
+              <th style="width:118px;">映射方式</th>
+              <th style="width:140px;">配置参数名</th>
+              <th>字段 / SQL 模板</th>
+            </tr></thead>
+            <tbody id="mapBody"></tbody>
+          </table>
+          <div style="font-size:12px;color:#909399;margin-top:6px;line-height:1.7;">
+            映射方式：字段 IN → <span style="color:#606266;">字段 IN (值集合)</span>；EXISTS SQL → <span style="color:#606266;">EXISTS (自定义SQL ... IN 值集合)</span>；字段 = → 仅创建人；LEFT(字段,4) IN → 仅零件号前 4 位。<br>
+            校验：字段仅允许「别名.字段名」；SQL 必须以 <span style="color:#606266;">SELECT</span> 开头，禁止 <span style="color:#606266;">; -- /* INSERT UPDATE DELETE DROP ALTER TRUNCATE UNION</span>。
           </div>
         </div>
       </div>
 
-      <!-- 维度间关系（模式开关 + 点选拼接） -->
-      <div class="panel" style="margin-bottom:14px;">
-        <div class="panel-title" style="font-size:14px;">维度间关系</div>
-        <div class="panel-body">
-          <div class="flex-gap" style="margin-bottom:10px;">
-            <label class="ck"><input type="radio" name="relMode" value="union" checked onchange="switchRelMode('union')"> 全部取并（默认）</label>
-            <label class="ck"><input type="radio" name="relMode" value="custom" onchange="switchRelMode('custom')"> 自定义</label>
-          </div>
-          <div id="relCustom" style="display:none;">
-            <div class="muted" style="margin-bottom:6px;font-size:12px;">可用维度（仅本次已勾选的维度，点击插入）</div>
-            <div id="relDims" class="flex-gap" style="flex-wrap:wrap;margin-bottom:8px;"></div>
-            <div class="flex-gap" style="flex-wrap:wrap;margin-bottom:8px;">
-              <button type="button" class="btn btn-default btn-sm" onclick="relInsert('(')">（</button>
-              <button type="button" class="btn btn-default btn-sm" onclick="relInsert(')')">）</button>
-              <button type="button" class="btn btn-default btn-sm" onclick="relInsert(' AND ')">AND</button>
-              <button type="button" class="btn btn-default btn-sm" onclick="relInsert(' OR ')">OR</button>
-              <button type="button" class="btn btn-default btn-sm" onclick="relBackspace()">退格</button>
-              <button type="button" class="btn btn-default btn-sm" onclick="relClear()">清空</button>
-            </div>
-            <input type="text" id="fRelExpr" readonly placeholder="点击上方维度与操作符拼装（不可手动输入）" style="width:100%;height:32px;border:1px solid #dcdfe6;border-radius:4px;padding:0 10px;background:#fafafa;">
-            <div class="err" id="relErr"></div>
-          </div>
-        </div>
-      </div>
-
-      <!-- 启用扩展权限 + 扩展条件子表 -->
-      <div class="panel" style="margin-bottom:4px;border-color:#b3d8ff;">
+      <!-- 启用扩展权限 + 扩展规则子表（纯 EXISTS SQL） -->
+      <div class="panel" style="margin-bottom:14px;border-color:#b3d8ff;">
         <div class="panel-title" style="font-size:14px;background:#e3f0ff;">
           <label class="ck" style="font-weight:600;"><input type="checkbox" id="fExtOn" onchange="toggleExt()"> 启用扩展权限 <span class="new-col-badge">调整</span></label>
+          <span style="font-size:12px;color:#909399;font-weight:normal;">开启后，每条规则以 <span style="color:#606266;">EXT:规则名</span> 作为独立维度参与统一交并集</span>
         </div>
         <div class="panel-body" id="extBox" style="display:none;">
           <div class="flex-gap" style="justify-content:space-between;margin-bottom:8px;">
-            <button class="btn btn-primary btn-sm" onclick="addExtRow()">新增条件</button>
+            <button class="btn btn-primary btn-sm" onclick="addExtRow()">新增规则</button>
           </div>
           <table class="ext-table">
             <thead><tr>
-              <th style="width:100px;">配置条件名称</th>
-              <th style="width:96px;">数据来源<span class="req" style="color:#f56c6c;">*</span></th>
-              <th style="width:96px;">列名</th>
-              <th style="width:88px;">操作符</th>
-              <th>值 / SQL 片段</th>
-              <th style="width:70px;">条件间关系</th>
+              <th style="width:160px;">规则名称<span class="req" style="color:#f56c6c;">*</span></th>
+              <th>规则 SQL（EXISTS 子查询）<span class="req" style="color:#f56c6c;">*</span></th>
               <th style="width:52px;">启用</th>
-              <th style="width:120px;">操作</th>
+              <th style="width:70px;">操作</th>
             </tr></thead>
             <tbody id="extTbody"></tbody>
           </table>
+          <div style="font-size:12px;color:#909399;margin-top:6px;line-height:1.7;">
+            内置变量：${userId} 当前用户ID、${username} 当前用户名、${orgIdList} 用户组织ID集合；
+            须以 <span style="color:#606266;">SELECT</span> 开头，并书写主查询主表别名（如 <span style="color:#606266;">gpia.MATERIAL_ID</span>）。
+          </div>
 
-          <!-- 模式二：高级 SQL 专属操作区 -->
+          <!-- SQL 校验区 -->
           <div class="sql-bar" id="sqlBar" style="display:none;">
             <div class="flex-gap" style="flex-wrap:wrap;align-items:center;">
-              <b style="font-size:13px;color:#d48806;">模式二（高级 SQL）</b>
+              <b style="font-size:13px;color:#d48806;">SQL 校验</b>
               <button class="btn btn-default btn-sm" onclick="sqlCheck()">1. 语法校验</button>
-              <button class="btn btn-default btn-sm" onclick="sqlDryRun()">2. 试运行</button>
-              <button class="btn btn-default btn-sm" onclick="sqlDataPreview()">3. 数据预览</button>
-              <button class="btn btn-default btn-sm" onclick="extImpact(sqlRowIdx())">影响预览</button>
-              <button class="btn btn-default btn-sm" onclick="extRollback(sqlRowIdx())">回滚上一版本</button>
+              <button class="btn btn-default btn-sm" onclick="sqlDataPreview()">2. 预览（假值）</button>
             </div>
             <div id="sqlResult" class="sql-result" style="display:none;"></div>
           </div>
 
         </div>
       </div>
+
+      <!-- 统一交并集规则 -->
+      <div class="panel" style="margin-bottom:14px;">
+        <div class="panel-title" style="font-size:14px;">统一交并集规则 <span style="font-size:12px;color:#909399;font-weight:normal;">全维度同一表达式；仅可点选芯片拼装，不可手输</span></div>
+        <div class="panel-body">
+          <div class="flex-gap" id="tokenBar" style="flex-wrap:wrap;margin-bottom:10px;"></div>
+          <div style="display:flex;gap:8px;align-items:flex-start;">
+            <input type="text" id="fRelExpr" readonly placeholder="留空＝系统默认逻辑（已启用维度全部取并）" style="flex:1;height:34px;font-family:Consolas,Monaco,monospace;font-size:13px;background:#fafafa;">
+            <button type="button" class="btn btn-default btn-sm" onclick="fillDefaultExpr()">填充默认逻辑</button>
+            <button type="button" class="btn btn-default btn-sm" onclick="clearExpr()">清空</button>
+          </div>
+          <div class="err" id="relErr"></div>
+          <div id="exprMsg" class="alert alert-info" style="margin:8px 0 0;display:none;"></div>
+          <div style="margin-top:10px;">
+            <div style="font-size:12px;color:#909399;margin-bottom:6px;">预览 SQL（使用假值，不展示真实数据）</div>
+            <pre id="sqlPreview" style="background:#282c34;color:#abb2bf;padding:12px 14px;border-radius:4px;font-size:12px;line-height:1.7;overflow:auto;margin:0;"></pre>
+          </div>
+          <div style="font-size:12px;color:#909399;margin-top:6px;line-height:1.7;">
+            文法：仅支持 <span style="color:#606266;">AND</span> / <span style="color:#606266;">OR</span> / <span style="color:#606266;">( )</span>，不支持 NOT；运算符须夹在两个维度之间。
+          </div>
+        </div>
+      </div>
+
     </div>
     <div class="modal-foot">
       <button class="btn btn-default" onclick="closeEdit()">取消</button>
@@ -225,27 +237,48 @@ GpmLayout.init({
   activeTab: 'dataAuthConfig'
 });
 
-/* ================= 维度定义（10 项：含「全部」+ 启用扩展权限） ================= */
-var DIMS = [
-  { key:'all',             name:'全部',             desc:'全部维度开关', isNew:false },
-  { key:'enableOrg',       name:'启用工厂权限',     desc:'组织/工厂维度（原有保留）', isNew:false },
-  { key:'enableCategory',  name:'启用品类分工权限', desc:'采购品类分工（原有）', isNew:false },
-  { key:'enableMaterial',  name:'启用物料分工权限', desc:'即零件认领（原有）', isNew:false },
-  { key:'enableCreated',   name:'启用创建人权限',   desc:'按创建人过滤（原有）', isNew:false },
-  { key:'enableDomainBuy', name:'启用领域权限', desc:'取统一统筹页-领域（采购）/领域（成本）', isNew:true },
-  { key:'enableBrand',     name:'启用品牌&国际/国内权限', desc:'品牌×国际/国内组合授权', isNew:true },
-  { key:'enableCarModel',  name:'启用车型权限',     desc:'成本经理/工装项目成本管理', isNew:true },
-  { key:'enablePartPrefix',name:'启用零件号前缀',   desc:'CE 件号分组号前 4 位', isNew:true },
-  { key:'enableExt',       name:'启用扩展权限',     desc:'开启后配置扩展条件子表', isNew:true }
+/* ================= 维度元数据（9 项：取值变量 / 映射方式 / 配置参数名） ================= */
+var DIM_META = [
+  { key:'org', name:'启用工厂权限', token:'ORG', varLabel:'用户组织 / 工厂 ID 集合', varVal:'${orgIdList}', isNew:false,
+    methods:[{v:'field',t:'字段 IN',param:'inOrgColumn',ph:'字段，例如 gpia.ORG_ID',def:'gpia.ORG_ID'},
+             {v:'sql',t:'EXISTS SQL',param:'filterOrgSql',ph:'SELECT SQL，且以 IN 结尾',def:'SELECT 1 FROM ORG_RELATION r WHERE r.BUDGET_ID = a.ID AND r.ORG_ID IN'}], vals:['1001','1002'], num:true },
+  { key:'category', name:'启用品类分工权限', token:'CATEGORY', varLabel:'品类分工 ID 集合', varVal:'${categoryIdList}', isNew:false,
+    methods:[{v:'field',t:'字段 IN',param:'inCategoryColumn',ph:'字段，例如 gpia.CATEGORY_ID',def:'gpia.CATEGORY_ID'},
+             {v:'sql',t:'EXISTS SQL',param:'filterCategorySql',ph:'SELECT SQL，且以 IN 结尾',def:'SELECT 1 FROM scc_base_material_item sbmi WHERE gpia.MATERIAL_ID = sbmi.MATERIAL_ID AND sbmi.CATEGORY_ID IN'}], vals:['55','66'], num:true },
+  { key:'material', name:'启用物料分工权限', token:'MATERIAL', varLabel:'物料认领 ID 集合', varVal:'${materialIdList}', isNew:false,
+    methods:[{v:'field',t:'字段 IN',param:'inMaterialColumn',ph:'字段，例如 gpia.MATERIAL_ID',def:'gpia.MATERIAL_ID'},
+             {v:'sql',t:'EXISTS SQL',param:'filterMaterialSql',ph:'SELECT SQL，且以 IN 结尾',def:'SELECT 1 FROM BUDGET_LINE bl WHERE bl.HEAD_ID = a.ID AND bl.MATERIAL_ID IN'}], vals:['90001','90002'], num:true },
+  { key:'domainBuy', name:'启用领域权限', token:'DOMAIN', varLabel:'同科室用户名集合', varVal:'${domainUsernames}', isNew:true,
+    methods:[{v:'field',t:'字段 IN',param:'inDomainColumn',ph:'字段，例如 gipc.PUR_OFFICER',def:'gipc.PUR_OFFICER'},
+             {v:'sql',t:'EXISTS SQL',param:'filterDomainSql',ph:'SELECT SQL，且以 IN 结尾',def:'SELECT 1 FROM DOMAIN_RELATION d WHERE d.BUDGET_ID = a.ID AND d.USERNAME IN'}], vals:['zhangsan','lisi'], num:false },
+  { key:'created', name:'启用创建人权限', token:'CREATOR', varLabel:'当前用户 ID', varVal:'${userId}', isNew:false,
+    methods:[{v:'equal',t:'字段 =',param:'eqCreatedColumn',ph:'字段，例如 gpia.CREATED_ID',def:'gpia.CREATED_ID'}], vals:['12345'], num:true },
+  { key:'brand', name:'启用品牌&国际/国内权限', token:'BRAND', varLabel:'品牌命中车型编码集合', varVal:'${brandModelCodeList}', isNew:true,
+    methods:[{v:'field',t:'字段 IN',param:'inBrandModelColumn',ph:'字段，例如 a.DEL_MODELS',def:'a.DEL_MODELS'},
+             {v:'sql',t:'EXISTS SQL',param:'filterBrandSql',ph:'SELECT SQL，且以 IN 结尾',def:'SELECT 1 FROM MODEL_PROJECT mp WHERE mp.BUDGET_ID = a.ID AND mp.MODEL_CODE IN'}], vals:['MODEL_A','MODEL_B'], num:false },
+  { key:'carModel', name:'启用车型权限', token:'CAR_MODEL', varLabel:'成本经理车型编码集合', varVal:'${carModelCodeList}', isNew:true,
+    methods:[{v:'field',t:'字段 IN',param:'inCarModelColumn',ph:'字段，例如 a.DEL_MODELS',def:'a.DEL_MODELS'},
+             {v:'sql',t:'EXISTS SQL',param:'filterCarModelSql',ph:'SELECT SQL，且以 IN 结尾',def:'SELECT 1 FROM MODEL_PROJECT mp WHERE mp.BUDGET_ID = a.ID AND mp.MODEL_CODE IN'}], vals:['MODEL_C'], num:false },
+  { key:'partNo4', name:'启用零件号前缀', token:'PART_NO_4', varLabel:'零件号前 4 位前缀集合', varVal:'${partNo4PrefixList}', isNew:true,
+    methods:[{v:'left4',t:'LEFT(字段,4) IN',param:'inPartNo4Column',ph:'字段，例如 c.MATERIAL_CODE',def:'c.MATERIAL_CODE'},
+             {v:'sql',t:'EXISTS SQL',param:'filterPartNo4Sql',ph:'SELECT SQL，且以 IN 结尾',def:'SELECT 1 FROM MATERIAL_CE_CONFIG ce WHERE ce.GROUP_NUMBER IN'}], vals:['ABCD','EFGH'], num:false },
+  { key:'extension', name:'启用扩展权限', token:'EXT', varLabel:'扩展规则（名称 + EXISTS SQL）', varVal:'—', isNew:true, isExt:true,
+    methods:[], vals:[], num:false }
 ];
+/* 列表页列位 ↔ 维度 key */
+var COL_KEY = { org:'org', category:'cat', material:'mat', created:'cre', domainBuy:'domBuy', brand:'brand', carModel:'car', partNo4:'prefix', extension:'ext' };
+
+/* 编辑态附加：字段映射 / 表达式 */
+var mapState = {};
+var exprState = '';
 
 /* ================= Mock 数据 ================= */
 var configs = [
   { func:'成本分析', role:'领域经理', priority:99, all:'否', org:'否', cat:'否', mat:'否', cre:'否', domBuy:'是', brand:'否', car:'否', prefix:'否', ext:'是', rel:'', by:'gacmadmin' },
   { func:'成本分析', role:'部门经理', priority:98, all:'否', org:'否', cat:'否', mat:'否', cre:'否', domBuy:'否', brand:'是', car:'否', prefix:'否', ext:'是', rel:'', by:'gacmadmin' },
   { func:'报表中心', role:'使用工程师', priority:99, all:'否', org:'否', cat:'否', mat:'否', cre:'否', domBuy:'否', brand:'否', car:'否', prefix:'否', ext:'是', rel:'', by:'gacmadmin' },
-  { func:'价格管理', role:'采购员', priority:99, all:'否', org:'是', cat:'是', mat:'是', cre:'是', domBuy:'否', brand:'否', car:'否', prefix:'否', ext:'否', rel:'工厂 OR 品类', by:'gacmadmin' },
-  { func:'价格管理', role:'采购科长', priority:98, all:'否', org:'是', cat:'是', mat:'否', cre:'否', domBuy:'否', brand:'是', car:'否', prefix:'否', ext:'否', rel:'工厂 AND 品牌', by:'gacmadmin' },
+  { func:'价格管理', role:'采购员', priority:99, all:'否', org:'是', cat:'是', mat:'是', cre:'是', domBuy:'否', brand:'否', car:'否', prefix:'否', ext:'否', rel:'ORG OR CATEGORY', by:'gacmadmin' },
+  { func:'价格管理', role:'采购科长', priority:98, all:'否', org:'是', cat:'是', mat:'否', cre:'否', domBuy:'否', brand:'是', car:'否', prefix:'否', ext:'否', rel:'ORG AND BRAND', by:'gacmadmin' },
   { func:'零件成本', role:'成本管理员', priority:99, all:'否', org:'是', cat:'否', mat:'否', cre:'否', domBuy:'否', brand:'否', car:'是', prefix:'否', ext:'否', rel:'', by:'gacmadmin' }
 ];
 var filtered = configs.slice();
@@ -310,241 +343,305 @@ function toggleSearch(){var a=document.getElementById('searchArea'),i=document.g
 /* ================= 编辑 ================= */
 function buildDimGrid(){
   var grid=document.getElementById('dimGrid'); grid.innerHTML='';
-  DIMS.forEach(function(d){
+  DIM_META.forEach(function(d){
     var cell=document.createElement('div');
     cell.className='dim-cell'+(d.isNew?' v52':'');
     cell.innerHTML='<div><div class="dim-name">'+d.name+(d.isNew?' <span class="new-col-badge">调整</span>':'')+'</div></div>'+
-      '<label class="switch"><input type="checkbox" '+(dimState[d.key]?'checked':'')+' onchange="dimState[\''+d.key+'\']=this.checked;refreshScenario()"><span class="slider"></span></label>';
+      '<label class="switch"><input type="checkbox" '+(dimState[d.key]?'checked':'')+' onchange="onSwitch(\''+d.key+'\',this.checked)"><span class="slider"></span></label>';
     grid.appendChild(cell);
   });
 }
+function onSwitch(key, on){
+  dimState[key]=on;
+  if(key==='extension'){
+    /* 与扩展区块的开关保持同步 */
+    document.getElementById('fExtOn').checked = on;
+    document.getElementById('extBox').style.display = on? 'block':'none';
+  }
+  renderMapping(); renderTokens(); renderPreview();
+}
+function onAllChange(){
+  var v=document.getElementById('fAll').value;
+  dimState.all = (v==='Y');
+  document.getElementById('allWarn').style.display = dimState.all? 'block':'none';
+  renderPreview();
+}
+/* ---------- 数据过滤字段映射 ---------- */
+function curMap(d){
+  if(!mapState[d.key]) mapState[d.key] = { method:d.methods[0].v, value:'' };
+  return mapState[d.key];
+}
+function renderMapping(){
+  var tb=document.getElementById('mapBody'); if(!tb) return; tb.innerHTML='';
+  DIM_META.forEach(function(d){
+    if(d.isExt) return;
+    var on=!!dimState[d.key], m=curMap(d);
+    var cur=d.methods.filter(function(x){ return x.v===m.method; })[0]||d.methods[0];
+    var isSql=(m.method==='sql');
+    var opts=d.methods.map(function(mt){ return '<option value="'+mt.v+'"'+(m.method===mt.v?' selected':'')+'>'+mt.t+'</option>'; }).join('');
+    var tr=document.createElement('tr');
+    if(!on) tr.style.opacity='.45';
+    tr.innerHTML=
+      '<td>'+(on?'<span class="tag tag-green">已启用</span>':'<span class="tag tag-gray">未启用</span>')+'</td>'+
+      '<td><b>'+d.name.replace('启用','')+'</b><div style="font-size:11px;color:#909399;">'+d.token+'</div></td>'+
+      '<td><div style="font-size:12px;">'+d.varLabel+'</div><span style="font-family:Consolas,monospace;font-size:11px;color:#409eff;">'+d.varVal+'</span></td>'+
+      '<td><select onchange="onMapMethod(\''+d.key+'\',this.value)">'+opts+'</select></td>'+
+      '<td><span class="tag tag-blue" style="font-family:Consolas,monospace;">'+cur.param+'</span></td>'+
+      '<td>'+(isSql
+        ? '<textarea rows="2" style="width:100%;" onchange="onMapValue(\''+d.key+'\',this.value)" placeholder="'+cur.ph+'"></textarea>'
+        : '<input type="text" style="width:100%;" value="'+esc(m.value||'')+'" onchange="onMapValue(\''+d.key+'\',this.value)" placeholder="'+cur.ph+'">')+
+        '<div class="err" id="mapErr-'+d.key+'"></div></td>';
+    tb.appendChild(tr);
+    if(isSql) tr.querySelector('textarea').value = m.value||'';
+  });
+}
+function onMapMethod(key,v){ curMap(DIM_META.filter(function(d){return d.key===key;})[0]).method=v; renderMapping(); renderPreview(); }
+function onMapValue(key,v){ curMap(DIM_META.filter(function(d){return d.key===key;})[0]).value=v; renderPreview(); }
 function openEdit(gi){
   editIdx=gi;
   document.getElementById('editTitle').innerText = gi<0? '数据权限配置新增':'数据权限配置编辑';
   var c = gi<0? null : filtered[gi];
-  dimState={}; extRows=[];
+  dimState={}; mapState={}; extRows=[]; exprState='';
   if(c){
-    dimState.all=c.all==='是'; dimState.enableOrg=c.org==='是'; dimState.enableCategory=c.cat==='是';
-    dimState.enableMaterial=c.mat==='是'; dimState.enableCreated=c.cre==='是'; dimState.enableDomainBuy=c.domBuy==='是';
-    dimState.enableBrand=c.brand==='是'; dimState.enableCarModel=c.car==='是'; dimState.enablePartPrefix=c.prefix==='是';
-    dimState.enableExt=c.ext==='是';
-    fFunc.value=c.func; fRole.value=c.role; fPriority.value=c.priority; fRelExpr.value=c.rel||'';
-    setRelMode(!!c.rel);
+    dimState.all=c.all==='是'; dimState.org=c.org==='是'; dimState.category=c.cat==='是';
+    dimState.material=c.mat==='是'; dimState.created=c.cre==='是'; dimState.domainBuy=c.domBuy==='是';
+    dimState.brand=c.brand==='是'; dimState.carModel=c.car==='是'; dimState.partNo4=c.prefix==='是';
+    dimState.extension=c.ext==='是';
+    fFunc.value=c.func; fRole.value=c.role; fPriority.value=c.priority;
+    document.getElementById('fAll').value = c.all==='是'? 'Y':'N';
     document.getElementById('fExtOn').checked = c.ext==='是';
+    exprState = c.rel||'';
     if(c.ext==='是'){
       extRows=[
-        { name:'研发部门',   src:'报表字段', col:'dept',   op:'等于', val:'车身开发部', rel:'AND', on:true },
-        { name:'数据版本', src:'SQL片段', col:'',       op:'',     val:'AND paramSource IN (\'month\',\'monthP\',\'monthSingle\',\'valvePoint\')', rel:'AND', on:true, dryRunOk:true, hasHistory:true, prevVal:'' }
+        { name:'研发部门', sql:"SELECT 1 FROM rpt_rd_dept rd WHERE rd.DEPT = gpia.RD_DEPT AND rd.USER_ID = ${userId}", on:true },
+        { name:'数据版本', sql:"SELECT 1 FROM gpia_version v WHERE v.ID = gpia.VERSION_ID AND v.SOURCE IN ('month','monthP','monthSingle','valvePoint')", on:true }
       ];
     }
   } else {
-    dimState={all:false,enableOrg:true,enableCategory:false,enableMaterial:false,enableCreated:false,enableDomainBuy:false,enableBrand:false,enableCarModel:false,enablePartPrefix:false,enableExt:false};
-    fFunc.value=''; fRole.value=''; fPriority.value='99'; fRelExpr.value='';
-    setRelMode(false);
+    dimState={ all:false, org:true, category:false, material:false, created:false, domainBuy:false, brand:false, carModel:false, partNo4:false, extension:false };
+    exprState='';
+    fFunc.value=''; fRole.value=''; fPriority.value='99';
+    document.getElementById('fAll').value='N';
     document.getElementById('fExtOn').checked=false;
   }
-  buildDimGrid(); renderExt(); toggleExt(); refreshScenario();
+  document.getElementById('fRelExpr').value = exprState;
+  onAllChange();
+  buildDimGrid(); renderMapping(); renderExt(); toggleExt(); renderTokens(); renderPreview();
   document.getElementById('editMask').classList.add('show');
 }
 function toggleExt(){
   var on = document.getElementById('fExtOn').checked;
+  dimState.extension = on;
   document.getElementById('extBox').style.display = on? 'block':'none';
-  dimState.enableExt = on;
-  refreshScenario();
+  buildDimGrid();          /* 反向同步维度开关网格里的「启用扩展权限」 */
+  renderMapping(); renderTokens(); renderPreview();
 }
 function renderExt(){
   var tb=document.getElementById('extTbody'); tb.innerHTML='';
-  var hasSql=false;
   extRows.forEach(function(r,i){
-    var isSql = r.src==='SQL片段';
-    if(isSql) hasSql=true;
     var tr=document.createElement('tr');
-    if(isSql) tr.className='sql-row';
-    var valCell, colCell, opCell;
-    if(isSql){
-      /* 模式二：SQL 片段输入，列名/操作符置灰 */
-      valCell = '<textarea rows="2" onchange="extRows['+i+'].val=this.value" placeholder="如：AND dept IN (SELECT dept FROM rpt_dept WHERE mgr=&quot;{user}&quot;)">'+esc(r.val)+'</textarea>';
-      colCell = '<span class="muted">—</span>';
-      opCell  = '<span class="muted">—</span>';
-    } else {
-      /* 模式一：结构化 */
-      valCell = '<input value="'+esc(r.val)+'" onchange="extRows['+i+'].val=this.value">';
-      colCell = '<input value="'+esc(r.col)+'" onchange="extRows['+i+'].col=this.value">';
-      opCell  = '<select onchange="extRows['+i+'].op=this.value">'+['为空','不为空','等于','不等于','IN','NOT IN'].map(function(o){return '<option '+(o===r.op?'selected':'')+'>'+o+'</option>';}).join('')+'</select>';
-    }
     tr.innerHTML=
-      '<td><input value="'+esc(r.name)+'" onchange="extRows['+i+'].name=this.value"></td>'+
-      '<td><select onchange="changeExtSrc('+i+',this.value)">'+
-        '<option value="报表字段" '+(r.src==='报表字段'?'selected':'')+'>结构化条件</option>'+
-        '<option value="SQL片段" '+(r.src==='SQL片段'?'selected':'')+'>SQL 片段</option>'+
-      '</select>'+
-      '<div class="mode-tag '+(isSql?'s2':'s1')+'" style="margin-top:4px;">模式'+(isSql?'二':'一')+'</div></td>'+
-      '<td>'+colCell+'</td>'+
-      '<td>'+opCell+'</td>'+
-      '<td>'+valCell+'</td>'+
-      '<td><select onchange="extRows['+i+'].rel=this.value"><option '+(r.rel==='AND'?'selected':'')+'>AND</option><option '+(r.rel==='OR'?'selected':'')+'>OR</option></select></td>'+
-      '<td><input type="checkbox" '+(r.on?'checked':'')+' onchange="extRows['+i+'].on=this.checked"></td>'+
-      '<td style="white-space:nowrap;">'+
-        '<span class="op-link" onclick="extImpact('+i+')">影响预览</span>'+
-        (r.hasHistory? '<span class="op-link" onclick="extRollback('+i+')">回滚</span>' : '')+
-        '<span class="op-link danger" onclick="extRows.splice('+i+',1);renderExt()">删除</span>'+
-      '</td>';
+      '<td><input value="'+esc(r.name)+'" onchange="extRows['+i+'].name=this.value" placeholder="如：研发部门"></td>'+
+      '<td><textarea rows="2" onchange="extRows['+i+'].sql=this.value" placeholder="SELECT 1 FROM ... WHERE ... IN"></textarea></td>'+
+      '<td><input type="checkbox" '+(r.on?'checked':'')+' onchange="extRows['+i+'].on=this.checked;renderTokens();renderPreview()"></td>'+
+      '<td><span class="op-link danger" onclick="delExtRow('+i+')">删除</span></td>';
     tb.appendChild(tr);
+    /* 回填 SQL（textarea 需用 value 赋值，避免转义问题） */
+    tr.querySelector('textarea').value = r.sql||'';
   });
-  if(!extRows.length) tb.innerHTML='<tr><td colspan="8" style="color:#909399;padding:14px;">暂无扩展条件，点击「新增条件」添加</td></tr>';
-  document.getElementById('sqlBar').style.display = hasSql? 'block':'none';
+  if(!extRows.length) tb.innerHTML='<tr><td colspan="4" style="color:#909399;padding:14px;">暂无扩展规则，点击「新增规则」添加</td></tr>';
+  document.getElementById('sqlBar').style.display = extRows.length? 'block':'none';
 }
+function delExtRow(i){ extRows.splice(i,1); renderExt(); renderTokens(); renderPreview(); }
 
 function addExtRow(){
-  extRows.push({name:'研发部门',src:'报表字段',col:'',op:'等于',val:'',rel:'AND',on:true});
-  renderExt();
-}
-function changeExtSrc(i, v){
-  extRows[i].src = v;
-  /* 切到 SQL 模式：清空结构化字段 */
-  if(v==='SQL片段'){ extRows[i].col=''; extRows[i].op=''; }
-  renderExt();
+  extRows.push({name:'', sql:'', on:true});
+  renderExt(); renderTokens(); renderPreview();
 }
 function esc(s){ return String(s||'').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
 
-/* ================= 模式二：高级 SQL 强制校验链 ================= */
+/* ================= 扩展规则 SQL 校验 ================= */
 
-function sqlRowIdx(){
-  for(var i=0;i<extRows.length;i++){ if(extRows[i].src==='SQL片段') return i; }
-  return -1;
-}
 function sqlOut(html){
   var box=document.getElementById('sqlResult');
   box.style.display='block';
   box.innerHTML = html;
 }
+var SQL_BAD=/[;]|--|\/\*|\b(INSERT|UPDATE|DELETE|DROP|ALTER|TRUNCATE|UNION)\b/i;
+function validExtRows(){
+  var names={}, msgs=[];
+  extRows.forEach(function(r,i){
+    var nm=(r.name||'').trim(), sql=(r.sql||'').trim();
+    if(!nm) msgs.push('第 '+(i+1)+' 条：规则名称必填');
+    else if(names[nm]) msgs.push('第 '+(i+1)+' 条：规则名称「'+nm+'」重复');
+    else names[nm]=1;
+    if(!sql) msgs.push('第 '+(i+1)+' 条：规则 SQL 必填');
+    else if(!/^SELECT/i.test(sql)) msgs.push('第 '+(i+1)+' 条：规则 SQL 须以 SELECT 开头');
+    else if(SQL_BAD.test(sql)) msgs.push('第 '+(i+1)+' 条：SQL 含危险关键字或注释');
+    else if((sql.match(/\(/g)||[]).length !== (sql.match(/\)/g)||[]).length) msgs.push('第 '+(i+1)+' 条：圆括号不配对');
+  });
+  return msgs;
+}
 /* 1. 语法校验 */
 function sqlCheck(){
-  var i=sqlRowIdx();
-  if(i<0){ sqlOut('<span class="bad">✗ 当前无 SQL 片段条件</span>'); return false; }
-  var sql=(extRows[i].val||'').trim();
-  if(!sql){ sqlOut('<span class="bad">✗ 语法校验未通过：SQL 片段为空</span>'); return false; }
-  /* 演示：检查括号配对 */
-  var l=(sql.match(/\(/g)||[]).length, r=(sql.match(/\)/g)||[]).length;
-  if(l!==r){ sqlOut('<span class="bad">✗ 语法校验未通过：圆括号不配对（左 '+l+' / 右 '+r+'），请修正后重试</span>'); return false; }
-  sqlOut('<span class="ok">✓ 语法校验通过</span><br>解析结果：SQL 片段合法，可进行试运行。');
+  if(!extRows.length){ sqlOut('<span class="bad">✗ 请先新增扩展规则</span>'); return false; }
+  var msgs=validExtRows();
+  if(msgs.length){ sqlOut('<span class="bad">✗ 校验未通过：</span><br>· '+msgs.join('<br>· ')); return false; }
+  sqlOut('<span class="ok">✓ 语法校验通过</span>：共 '+extRows.length+' 条规则，运行时按 EXISTS (...) 拼装。');
   return true;
 }
-/* 2. 试运行 */
-function sqlDryRun(){
-  if(!sqlCheck()) return;
-  var i=sqlRowIdx();
-  extRows[i].dryRunOk = true;
-  sqlOut('<span class="ok">✓ 试运行通过</span>　（已执行 EXPLAIN，未写入数据）<br>'+
-    '预估扫描行数：<b>12,480</b>　|　预估耗时：<b>0.32s</b>　|　是否走索引：<b>是</b><br>'+
-    '');
-}
-/* 3. 数据预览 */
+/* 2. 预览（假值） */
 function sqlDataPreview(){
   if(!sqlCheck()) return;
-  sqlOut('<span class="ok">✓ 数据预览</span>（按当前条件命中的数据，前 5 条）'+
-    '<table><thead><tr><th>项目代号</th><th>车型</th><th>研发领域</th><th>研发部门</th><th>功能包</th></tr></thead>'+
-    '<tbody>'+
-    '<tr><td>PRJ-AY2025</td><td>AION Y</td><td>内外饰</td><td>车身开发部</td><td>内饰包</td></tr>'+
-    '<tr><td>PRJ-AY2025</td><td>AION Y</td><td>内外饰</td><td>车身开发部</td><td>仪表包</td></tr>'+
-    '<tr><td>PRJ-M8-2024</td><td>传祺M8</td><td>车身</td><td>车身开发部</td><td>车身覆盖件</td></tr>'+
-    '<tr><td>PRJ-HGT-2026</td><td>昊铂GT</td><td>底盘</td><td>架构开发部</td><td>底盘结构件</td></tr>'+
-    '<tr><td>PRJ-AS2026</td><td>AION S Plus</td><td>座舱</td><td>智能座舱产品线</td><td>智能座舱包</td></tr>'+
-    '</tbody></table>'+
-    '<span class="muted">共命中 <b>3,214</b> 条</span>');
-}
-/* 影响预览 */
-function extImpact(i){
-  if(i<0 || !extRows[i]){ sqlOut('<span class="bad">✗ 请先新增一条扩展条件</span>'); return; }
-  var r=extRows[i];
-  sqlOut('<b>影响预览 · '+esc(r.name||'（未命名条件）')+'</b><br>'+
-    '受影响功能编码：<b>'+esc(document.getElementById('fFunc').value||'（未选择）')+'</b><br>'+
-    '受影响角色：<b>'+esc(document.getElementById('fRole').value||'（未选择）')+'</b><br>'+
-    '命中数据量：<b>3,214</b> 条（较配置前 <span class="bad">↑ +218 条</span>）<br>'+
-    '受影响页面：本次 4 张报表（功能包及采购成本达成 / 部门达成情况 / 采购成本达成 / 变化履历）<br>'+
-    '');
-}
-/* 回滚上一版本 */
-function extRollback(i){
-  if(i<0 || !extRows[i]){ sqlOut('<span class="bad">✗ 请先新增一条扩展条件</span>'); return; }
-  var r=extRows[i];
-  if(!confirm('确认将该扩展条件回滚到上一版本？\n（当前未保存的修改将丢失）')) return;
-  r.val = r.prevVal!==undefined? r.prevVal : '';
-  renderExt();
-  sqlOut('<span class="ok">✓ 已回滚到上一版本</span><br>条件「'+esc(r.name||'—')+'」已恢复为改前值。');
+  var html=extRows.filter(function(r){ return r.on; }).map(function(r){
+    var s=String(r.sql).replace(/\$\{userId\}/g,'12345').replace(/\$\{username\}/g,"'zhangsan'").replace(/\$\{orgIdList\}/g,'1001,1002');
+    return '<div style="margin-top:8px;"><b>'+esc(r.name)+'</b><pre style="background:#282c34;color:#abb2bf;padding:10px 12px;border-radius:4px;font-size:12px;overflow:auto;margin:4px 0 0;">EXISTS ('+esc(s)+')</pre></div>';
+  }).join('');
+  sqlOut('<span class="ok">✓ 预览（使用假值，不展示真实数据）</span>'+html);
 }
 
-/* ================= 维度间关系（全部取并 / 自定义点选拼接） ================= */
-function relSelectedDims(){
-  return DIMS.filter(function(d){ return d.key!=='all' && dimState[d.key]; });
+/* ================= 统一交并集（芯片点选 + 表达式 + 预览 SQL） ================= */
+function activeDims(){ return DIM_META.filter(function(d){ return dimState[d.key] && !d.isExt; }); }
+function activeExtRules(){ return dimState.extension? extRows.filter(function(r){ return (r.name||'').trim() && r.on; }) : []; }
+function renderTokens(){
+  var bar=document.getElementById('tokenBar'); if(!bar) return;
+  var list=[];
+  activeDims().forEach(function(d){ list.push({t:d.token, label:d.name.replace('启用','')}); });
+  activeExtRules().forEach(function(r){ list.push({t:'EXT:'+r.name.trim(), label:'扩展·'+r.name.trim(), ext:true}); });
+  var html = list.length? list.map(function(x){
+    return '<span class="tag '+(x.ext?'tag-orange':'tag-blue')+'" style="cursor:pointer;" title="'+x.label+'（点击插入）" onclick="insertTok(\''+x.t+'\')">'+x.t+'</span>';
+  }).join('') : '<span class="muted" style="font-size:12px;">尚未启用任何维度，请先在上方打开开关</span>';
+  ['AND','OR','(',')'].forEach(function(op){
+    html += '<span class="tag" style="cursor:pointer;background:#f4f4f5;color:#606266;font-weight:600;margin-left:4px;" onclick="insertTok(\''+op+'\')">'+op+'</span>';
+  });
+  bar.innerHTML = html;
 }
-function renderRelDims(){
-  var box=document.getElementById('relDims'); if(!box) return;
-  var ds=relSelectedDims();
-  box.innerHTML = ds.length? ds.map(function(d){
-    return '<span class="tag tag-blue" style="cursor:pointer;" onclick="relInsert(\''+d.name+'\')">'+d.name+'</span>';
-  }).join('') : '<span class="muted" style="font-size:12px;">请先在上方勾选维度</span>';
-}
-function switchRelMode(m){
-  var box=document.getElementById('relCustom');
-  box.style.display = (m==='custom')? 'block':'none';
-  if(m==='custom'){ renderRelDims(); validateRel(); }
-  else { document.getElementById('relErr').innerText=''; }
-}
-function setRelMode(custom){
-  var m = custom? 'custom':'union';
-  var r = document.querySelector('input[name="relMode"][value="'+m+'"]');
-  if(r) r.checked = true;
-  switchRelMode(m);
-}
-function relInsert(t){
-  var el=document.getElementById('fRelExpr'); el.value += t; validateRel();
-}
-function relBackspace(){
+function insertTok(t){
   var el=document.getElementById('fRelExpr');
-  el.value = el.value.replace(/\s*\S+\s*$/,'').replace(/\s+$/,'');
-  validateRel();
+  el.value = (el.value? el.value+' ' : '') + t;
+  renderPreview(); validateExpr();
 }
-function relClear(){ document.getElementById('fRelExpr').value=''; validateRel(); }
-function validateRel(){
+function fillDefaultExpr(){
+  var ds=activeDims().map(function(d){ return d.token; });
+  activeExtRules().forEach(function(r){ ds.push('EXT:'+r.name.trim()); });
+  if(!ds.length){ alert('请先启用至少一个维度或扩展规则'); return; }
+  document.getElementById('fRelExpr').value = ds.join(' OR ');
+  renderPreview(); validateExpr();
+}
+function clearExpr(){ document.getElementById('fRelExpr').value=''; renderPreview(); validateExpr(); }
+function validateExpr(){
   var el=document.getElementById('fRelExpr'), err=document.getElementById('relErr');
   if(!el||!err) return true;
-  var v=el.value.trim(); err.innerText='';
-  if(!v){ return true; }
+  err.innerText='';
+  var v=el.value.trim(); if(!v) return true;
   var l=(v.match(/\(/g)||[]).length, r=(v.match(/\)/g)||[]).length;
   if(l!==r){ err.innerText='括号未成对'; return false; }
-  if(/(AND|OR)\s*(AND|OR)/.test(v) || /^(AND|OR)/.test(v) || /(AND|OR)\s*$/.test(v)){ err.innerText='AND / OR 两侧需有维度'; return false; }
+  if(/\b(AND|OR)\s+(AND|OR)\b/.test(v) || /^(AND|OR)\b/.test(v) || /\b(AND|OR)$/.test(v) || /\bNOT\b/i.test(v)){ err.innerText='AND / OR 两侧需有维度；不支持 NOT'; return false; }
   return true;
 }
-function refreshScenario(){ renderRelDims(); }
+/* 预览 SQL（使用假值） */
+function lit(v,num){ return num? v : "'"+String(v).replace(/'/g,"''")+"'"; }
+function dimSql(token){
+  if(token.indexOf('EXT:')===0){
+    var nm=token.slice(4);
+    var r=extRows.filter(function(x){ return (x.name||'').trim()===nm; })[0];
+    if(!r) return null;
+    var s=String(r.sql).replace(/\$\{userId\}/g,'12345').replace(/\$\{username\}/g,"'zhangsan'").replace(/\$\{orgIdList\}/g,'1001,1002');
+    return 'EXISTS ('+s+')';
+  }
+  var d=DIM_META.filter(function(x){ return x.token===token; })[0];
+  if(!d) return null;
+  var m=curMap(d), v=(m.value||'').trim();
+  if(!v) return null;
+  if(m.method==='sql') return 'EXISTS ('+v+' ('+d.vals.map(function(x){ return lit(x,d.num); }).join(',')+'))';
+  if(m.method==='equal') return v+' = 12345';
+  if(m.method==='left4') return 'LEFT('+v+', 4) IN ('+d.vals.map(function(x){ return "'"+x+"'"; }).join(',')+')';
+  return v+' IN ('+d.vals.map(function(x){ return lit(x,d.num); }).join(',')+')';
+}
+function tokenize(e){ return e.match(/[()]|[^ ()\s]+/g) || []; }
+function parseToSql(tks){
+  var pos={i:0};
+  function peek(){ return tks[pos.i]; }
+  function next(){ return tks[pos.i++]; }
+  function pOr(){ var l=pAnd(); while(peek()==='OR'){ next(); l={op:'OR', l:l, r:pAnd()}; } return l; }
+  function pAnd(){ var l=pPrim(); while(peek()==='AND'){ next(); l={op:'AND', l:l, r:pPrim()}; } return l; }
+  function pPrim(){
+    var t=peek();
+    if(t===undefined) throw new Error('表达式不完整');
+    if(t==='('){ next(); var n=pOr(); if(peek()!==')') throw new Error('括号未闭合'); next(); return {group:n}; }
+    if(t===')') throw new Error('多余的右括号');
+    if(t==='AND'||t==='OR') throw new Error('运算符位置错误');
+    next(); return {dim:t};
+  }
+  var n=pOr();
+  if(peek()!==undefined) throw new Error('末尾多余内容');
+  return n;
+}
+function nodeSql(n){
+  if(n.dim){ var s=dimSql(n.dim); return s||('1=1 /* '+n.dim+' 未配置字段/SQL */'); }
+  if(n.group) return '('+nodeSql(n.group)+')';
+  return nodeSql(n.l)+' '+(n.op==='OR'?'OR':'AND')+' '+nodeSql(n.r);
+}
+function renderPreview(){
+  var pre=document.getElementById('sqlPreview'), msg=document.getElementById('exprMsg');
+  if(!pre) return;
+  if(dimState.all){
+    pre.textContent='-- 全部数据权限：运行时不加任何过滤条件';
+    if(msg) msg.style.display='none';
+    return;
+  }
+  var expr=document.getElementById('fRelExpr').value.trim();
+  var def=activeDims().map(function(d){ return d.token; });
+  activeExtRules().forEach(function(r){ def.push('EXT:'+r.name.trim()); });
+  if(!expr){
+    if(msg){
+      msg.style.display='block';
+      msg.innerHTML = def.length
+        ? '当前使用<b>系统默认逻辑</b>（表达式留空）：<b>'+def.join(' OR ')+'</b>（已启用维度全部取并）。'
+        : '尚未启用任何维度。';
+    }
+    var sqls=def.map(function(t){ return dimSql(t)||('1=1 /* '+t+' 未配置 */'); });
+    pre.textContent = sqls.length? sqls.join('\n  OR ') : '-- 未启用任何维度';
+    return;
+  }
+  if(msg) msg.style.display='none';
+  try{
+    var n=parseToSql(tokenize(expr));
+    pre.textContent = nodeSql(n);
+  }catch(e){
+    pre.textContent = '-- 表达式有误，无法生成 SQL\n-- '+e.message;
+  }
+}
+function refreshScenario(){ renderTokens(); renderPreview(); }
 
 function saveConfig(){
-  if(!fFunc.value){alert('功能必填');return;}
-  if(!fRole.value){alert('角色必填');return;}
-  if(document.querySelector('input[name="relMode"]:checked').value==='custom' && !validateRel()){
-    alert('维度间关系：' + (document.getElementById('relErr').innerText||'表达式不合法')); return;
-  }
-  var ext = document.getElementById('fExtOn').checked;
-  /* 模式二（高级 SQL）保存前强制校验 */
-  if(ext){
-    var si=sqlRowIdx();
-    if(si>=0){
-      var sr=extRows[si];
-      if(!(sr.val||'').trim()){ alert('SQL 片段为空'); return; }
-      var l=(sr.val.match(/\(/g)||[]).length, r=(sr.val.match(/\)/g)||[]).length;
-      if(l!==r){ alert('圆括号不配对'); return; }
-      if(!sr.dryRunOk){
-        alert('请先完成语法校验 / 试运行 / 数据预览');
-        return;
-      }
-    }
+  if(!fFunc.value){alert('功能编码必填');return;}
+  if(!fRole.value){alert('角色名称必填');return;}
+  if(!document.getElementById('fPriority').value.trim()){alert('优先级必填');return;}
+  if(!dimState.all){
+    var onDims=activeDims();
+    if(!onDims.length){ alert('请至少启用一个维度，或选择「全部数据权限 = 是」'); return; }
+    /* 已启用维度必须配置字段 / SQL */
+    var miss=[], FIELD_RE=/^[A-Za-z_][A-Za-z0-9_]*([.][A-Za-z_][A-Za-z0-9_]*)?$/;
+    onDims.forEach(function(d){
+      var m=curMap(d), nm=d.name.replace('启用',''), v=(m.value||'').trim();
+      if(!v) miss.push(nm+'（未配置字段 / SQL）');
+      else if(m.method==='sql'){
+        if(!/^SELECT/i.test(v)) miss.push(nm+'（SQL 须以 SELECT 开头）');
+        else if(SQL_BAD.test(v)) miss.push(nm+'（SQL 含危险关键字或注释）');
+      } else if(!FIELD_RE.test(v)) miss.push(nm+'（字段格式不合法，仅允许 别名.字段名）');
+    });
+    if(miss.length){ alert('以下已启用维度未正确配置：\n· '+miss.join('\n· ')); return; }
+    var emsgs=validExtRows();
+    if(dimState.extension && emsgs.length){ alert('扩展规则校验未通过：\n· '+emsgs.join('\n· ')); return; }
+    if(!validateExpr()){ alert('交并集表达式不合法：'+document.getElementById('relErr').innerText); return; }
   }
   var obj={
     func:fFunc.value, role:fRole.value, priority:parseInt(fPriority.value)||99, all:dimState.all?'是':'否',
-    org:dimState.enableOrg?'是':'否', cat:dimState.enableCategory?'是':'否', mat:dimState.enableMaterial?'是':'否',
-    cre:dimState.enableCreated?'是':'否', domBuy:dimState.enableDomainBuy?'是':'否', brand:dimState.enableBrand?'是':'否',
-    car:dimState.enableCarModel?'是':'否', prefix:dimState.enablePartPrefix?'是':'否',
-    ext:ext?'是':'否', rel:(document.querySelector('input[name="relMode"]:checked').value==='custom')?document.getElementById('fRelExpr').value.trim():'', by:'董海涛'
+    org:dimState.org?'是':'否', cat:dimState.category?'是':'否', mat:dimState.material?'是':'否',
+    cre:dimState.created?'是':'否', domBuy:dimState.domainBuy?'是':'否', brand:dimState.brand?'是':'否',
+    car:dimState.carModel?'是':'否', prefix:dimState.partNo4?'是':'否',
+    ext:dimState.extension?'是':'否', rel:document.getElementById('fRelExpr').value.trim(), by:'董海涛'
   };
   if(editIdx<0){ configs.unshift(obj); } else { Object.assign(filtered[editIdx], obj); }
   closeEdit(); doSearch();

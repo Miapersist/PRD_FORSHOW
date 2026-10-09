@@ -24,7 +24,14 @@
         <div class="search-item"><label>角色名称：</label><input type="text" id="qName" placeholder="请输入角色名称"></div>
         <div class="search-item new-col"><label>生效日期：</label><input type="text" id="qDate" placeholder="选择日期" onfocus="this.type='date'"></div>
         <div class="search-item new-col"><label>管理部门：</label>
-          <input type="text" id="qDept" placeholder="请输入管理部门（支持模糊）">
+          <select id="qDept" multiple size="3" style="min-width:150px;">
+            <option>采购本部</option><option>财务本部</option><option>成本工程部</option><option>动力BU</option><option>数字化部</option>
+          </select>
+        </div>
+        <div class="search-item new-col"><label>使用部门：</label>
+          <select id="qUseDept" multiple size="3" style="min-width:150px;">
+            <option>采购本部</option><option>财务本部</option><option>成本工程部</option><option>动力BU</option><option>数字化部</option>
+          </select>
         </div>
         <div class="search-actions">
           <button class="btn btn-primary" onclick="doSearch()">查询</button>
@@ -51,6 +58,7 @@
           <th style="min-width:130px;">角色名称</th>
           <th style="width:110px;">角色类型</th>
           <th class="new-col" style="min-width:110px;">管理部门<span class="new-col-badge">调整</span></th>
+          <th class="new-col" style="min-width:110px;">使用部门<span class="new-col-badge">调整</span></th>
           <th class="new-col" style="min-width:230px;">角色说明<span class="new-col-badge">调整</span></th>
           <th style="width:100px;">生效日期</th>
           <th style="width:100px;">失效日期</th>
@@ -124,7 +132,16 @@
           <div class="form-row">
             <div class="form-item"><label>管理部门：</label>
               <div class="field-col">
-                <input type="text" id="fDept" placeholder="请输入管理部门">
+                <select id="fDept" multiple size="4" style="min-width:170px;">
+                  <option>采购本部</option><option>财务本部</option><option>成本工程部</option><option>动力BU</option><option>数字化部</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-item"><label>使用部门：</label>
+              <div class="field-col">
+                <select id="fUseDept" multiple size="4" style="min-width:170px;">
+                  <option>采购本部</option><option>财务本部</option><option>成本工程部</option><option>动力BU</option><option>数字化部</option>
+                </select>
               </div>
             </div>
           </div>
@@ -169,7 +186,7 @@
         </div>
       </div>
       <div class="import-tpl-note">
-        导入模板列（<b>固定 7 列</b>）：<b>角色编码｜角色名称｜角色类型｜管理部门｜角色说明｜生效时间｜失效时间</b><br>
+        导入模板列（<b>固定 8 列</b>）：<b>角色编码｜角色名称｜角色类型｜管理部门｜使用部门｜角色说明｜生效时间｜失效时间</b>（部门列须为字典内值，多值以「；」分隔）<br>
         <a class="link" onclick="downloadTpl()">下载导入模板.xlsx</a>
       </div>
     </div>
@@ -217,6 +234,28 @@ var roles = [
   { code:'RespEngineer', name:'责任工程师', type:ROLE_TYPE_BUYER, dept:'研发', desc:'责任工程师，负责本功能包设计与成本', start:'2022-02-11', end:'' },
   { code:'CostManager', name:'成本经理', type:ROLE_TYPE_BUYER, dept:'成本工程部', desc:'成本经理，统筹本部门成本与功能包达成', start:'2022-03-01', end:'' }
 ];
+/* 部门字典（5 项）：管理部门 / 使用部门 下拉多选取值 */
+var USE_DEPTS = ['采购本部','财务本部','成本工程部','动力BU','数字化部'];
+/* mock 归口部门映射到字典值 */
+var DEPT_MAP = { '采购':'采购本部', '财务':'财务本部', '成本工程部':'成本工程部', '生产管理部':'动力BU', '研发':'数字化部' };
+roles.forEach(function(r){
+  if(r.dept!==undefined) r.dept = DEPT_MAP[r.dept]!==undefined ? DEPT_MAP[r.dept] : r.dept;
+  if(r.useDept===undefined) r.useDept = r.dept || '';
+});
+function deptTags(v){
+  if(!v) return '<span class="muted">未填</span>';
+  return String(v).split('；').filter(Boolean).map(function(d){ return '<span class="tag tag-blue">'+esc(d)+'</span>'; }).join(' ');
+}
+function pickedVals(id){
+  var el = document.getElementById(id); if(!el) return [];
+  return Array.prototype.slice.call(el.selectedOptions || []).map(function(o){ return o.value || o.text; });
+}
+function setPicked(id, val){
+  var el = document.getElementById(id); if(!el) return;
+  var arr = String(val||'').split('；').filter(Boolean);
+  Array.prototype.slice.call(el.options).forEach(function(o){ o.selected = arr.indexOf(o.value||o.text) >= 0; });
+}
+function joinPicked(id){ var a = pickedVals(id); return a.join('；'); }
 var filtered = roles.slice();
 var curPage = 1, pageSize = 15;
 var editingIdx = -1;
@@ -233,7 +272,8 @@ function render() {
       '<td class="text-left">'+r.code+'</td>' +
       '<td>'+r.name+'</td>' +
       '<td>'+roleTypeTag(r.type)+'</td>' +
-      '<td class="new-col">'+(r.dept? '<span class="tag tag-blue">'+r.dept+'</span>':'<span class="muted">未填</span>')+'</td>' +
+      '<td class="new-col">'+deptTags(r.dept)+'</td>' +
+      '<td class="new-col">'+deptTags(r.useDept)+'</td>' +
       '<td class="new-col text-left" title="'+esc(r.desc)+'">'+ (r.desc? esc(r.desc) : '<span class="muted">未填</span>') +'</td>' +
       '<td>'+(r.start||'')+'</td>' +
       '<td>'+(r.end||'<span class="muted">长期</span>')+'</td>' +
@@ -274,17 +314,19 @@ function gotoPage(p){ var pages=Math.max(1,Math.ceil(filtered.length/pageSize));
 /* ================= 查询 ================= */
 function doSearch(){
   var c=document.getElementById('qCode').value.trim(), n=document.getElementById('qName').value.trim(),
-      d=document.getElementById('qDate').value, dp=document.getElementById('qDept').value;
+      d=document.getElementById('qDate').value,
+      dp=pickedVals('qDept'), up=pickedVals('qUseDept');
   filtered = roles.filter(function(r){
     if(c && r.code.indexOf(c)<0) return false;
     if(n && r.name.indexOf(n)<0) return false;
     if(d && r.start!==d) return false;
-    if(dp && (r.dept||'').indexOf(dp)<0) return false;
+    if(dp.length && !dp.some(function(v){ return (r.dept||'').indexOf(v)>=0; })) return false;
+    if(up.length && !up.some(function(v){ return (r.useDept||'').indexOf(v)>=0; })) return false;
     return true;
   });
   curPage=1; render();
 }
-function resetSearch(){ ['qCode','qName','qDate','qDept'].forEach(function(id){document.getElementById(id).value='';}); filtered=roles.slice(); curPage=1; render(); }
+function resetSearch(){ ['qCode','qName','qDate'].forEach(function(id){document.getElementById(id).value='';}); ['qDept','qUseDept'].forEach(function(id){ setPicked(id,''); }); filtered=roles.slice(); curPage=1; render(); }
 function toggleSearch(){ var a=document.getElementById('searchArea'),i=document.getElementById('collapseIco'); if(a.style.display==='none'){a.style.display='block';i.textContent='∧';}else{a.style.display='none';i.textContent='∨';} }
 
 /* ================= 新增/编辑 ================= */
@@ -298,7 +340,8 @@ function openEdit(gi){
   document.getElementById('fStart').value = r.start||today();
   document.getElementById('fEnd').value = r.end||'';
   document.getElementById('fName').value = r.name;
-  document.getElementById('fDept').value = r.dept||'';
+  setPicked('fDept', r.dept||'');
+  setPicked('fUseDept', r.useDept||'');
   document.getElementById('fDesc').value = r.desc||'';
   document.getElementById('fType').value = r.type || '采购商角色';
   langArr = [{lang:'简体中文', name:r.name}];
@@ -335,17 +378,17 @@ function treeNode(n,lv){
 function saveRole(){
   var ok=true;
   var code=document.getElementById('fCode').value.trim(), name=document.getElementById('fName').value.trim(),
-      start=document.getElementById('fStart').value, dept=document.getElementById('fDept').value.trim(),
+      start=document.getElementById('fStart').value, dept=joinPicked('fDept'), useDept=joinPicked('fUseDept'),
       desc=document.getElementById('fDesc').value.trim(), type=document.getElementById('fType').value;
   function mark(id,cond){ var f=document.getElementById(id).closest('.form-item'); f.classList.toggle('error',!cond); if(!cond)ok=false; }
-  /* 必填仅保留主属性：角色编码/角色名称/角色类型/生效日期；管理部门、角色说明均非必填 */
+  /* 必填仅保留主属性：角色编码/角色名称/角色类型/生效日期；管理部门/使用部门/角色说明均非必填 */
   mark('fCode',!!code); mark('fName',!!name); mark('fStart',!!start);
   if(!ok) return;
   if(editingIdx<0){
     if(roles.some(function(r){return r.code===code;})){ alert('角色编码已存在：'+code); return; }
-    roles.unshift({code:code,name:name,type:type,dept:dept,desc:desc,start:start,end:document.getElementById('fEnd').value});
+    roles.unshift({code:code,name:name,type:type,dept:dept,useDept:useDept,desc:desc,start:start,end:document.getElementById('fEnd').value});
   } else {
-    var r=filtered[editingIdx]; r.name=name; r.type=type; r.dept=dept; r.desc=desc; r.start=start; r.end=document.getElementById('fEnd').value;
+    var r=filtered[editingIdx]; r.name=name; r.type=type; r.dept=dept; r.useDept=useDept; r.desc=desc; r.start=start; r.end=document.getElementById('fEnd').value;
   }
   closeEdit(); doSearch();
   alert(editingIdx<0? '新增角色成功！':'保存成功！');
