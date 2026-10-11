@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>成本达成报表 · 原型索引（1011）</title>
+<link rel="stylesheet" href="_common/gpm.css">
+<style>
+  .idx{padding:26px;overflow:auto;height:100vh;}
+  .idx h1{font-size:19px;color:#303133;margin-bottom:8px;}
+  .idx p{color:#909399;font-size:13px;line-height:1.8;margin-bottom:20px;}
+  .idx ul{list-style:none;display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:12px;}
+  .idx a{display:block;padding:14px 16px;background:#fff;border:1px solid #e5e6eb;border-radius:4px;color:#1869e1;font-size:14px;}
+  .idx a:hover{border-color:#1869e1;background:#f5f9ff;}
+  .idx a span{display:block;color:#909399;font-size:12px;margin-top:6px;line-height:1.6;}
+  .idx .legend{margin-top:20px;font-size:12px;color:#606266;line-height:1.9;}
+  .tag-new{display:inline-block;font-size:10px;line-height:14px;padding:0 4px;border-radius:2px;background:#e8f2ff;color:#417FF9;border:1px solid #b8d6ff;}
+  .tag-pending{display:inline-block;font-size:10px;line-height:14px;padding:0 4px;border-radius:2px;background:#fff1f0;color:#FF0000;border:1px solid #ffccc7;}
+</style>
+</head>
+<body>
+<div class="idx">
+  <h1>成本达成报表 · 原型（1011）</h1>
+  <p>
+    依据《报表V10整车+部门_调研核对表_1011》（业务手改版）、《报表V10部门报表改点清单_1011》与《整车/部门成本达成报表 详细设计_1011》生成。<br>
+    真源（编辑区）：<code>output/5真源_原型HTML/成本达成报表_1011/</code>　生成物（发布快照）：<code>output/6生成物_原型HTML/成本达成报表_1011/</code><br>
+    页面内数据均为<b>示例数据</b>，非真实业务口径。
+  </p>
+  <ul>
+    <li><a href="01_整车成本达成报表.html">01 整车成本达成情况报表
+      <span>筛选（项目代号 / 数据来源 / 发布日期）+ 跳转与导出 + 物料成本 / 工装费 / 同步开发费三块；版本属性为行内列</span></a></li>
+    <li><a href="02_部门成本达成报表.html">02 部门成本达成情况报表
+      <span>筛选 5 项（项目代号 / 管理维度 / 选择部门 / 数据来源 / 发布日期）+ 常驻版本信息条 + 部门 × 配置（配置1…配置N）+ 工装费 / 同步开发费两块</span></a></li>
+  </ul>
+  <div class="legend">
+    颜色标识：<span class="tag-new">新增</span> 新增内容（蓝 #417FF9）　
+    <span class="tag-pending">待确认</span> 重点 / 待确认（红 #FF0000）　删除内容（灰 #999999）<br>
+    形态差异：版本属性（发布类型 / 归档阀门 / 发布日期 / BOM生成日期）在<b>整车级为行内列</b>，在<b>部门级为页面常驻信息条</b>（一行横排，不用单元格）。
+  </div>
+</div>
+</body>
+</html>
